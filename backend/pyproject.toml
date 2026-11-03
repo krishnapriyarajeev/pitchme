@@ -39,7 +39,7 @@ packages = ["ai", "server"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["ai", "server", "tests"]
+src = ["."]
 extend-exclude = ["alembic/versions"]
 
 [tool.ruff.lint]
