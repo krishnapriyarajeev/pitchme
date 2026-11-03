@@ -1,0 +1,59 @@
+name: pitchme
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pitchme}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pitchme-dev-secret}
+      POSTGRES_DB: ${POSTGRES_DB:-pitchme}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pitchme}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  minio:
+    image: quay.io/minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-pitchme}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-pitchme-dev-secret}
+    ports:
+      - "9000:9000"  # S3 API
+      - "9001:9001"  # web console
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  # Runs once: creates the private media bucket, then exits.
+  minio-init:
+    image: quay.io/minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-pitchme}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-pitchme-dev-secret}
+      MEDIA_BUCKET: ${MEDIA_BUCKET:-pitchme}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
+        mc mb --ignore-existing "local/$$MEDIA_BUCKET"
+        mc anonymous set none "local/$$MEDIA_BUCKET"
+
+volumes:
+  pg-data:
+  minio-data:
