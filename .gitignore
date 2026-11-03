@@ -1,0 +1,39 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node / Expo
+node_modules/
+.expo/
+web-build/
+*.tsbuildinfo
+
+# Local media and runtime output (real media lives in object storage)
+media/
+*.wav
+*.mp3
+*.mp4
+*.mov
+*.log
