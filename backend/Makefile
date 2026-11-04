@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help dev up down logs run practice test test-all lint fmt check clean reset
+.PHONY: help dev up down logs migrate revision run practice test test-all lint fmt check clean reset
 
 API_PORT ?= 8000
 
@@ -20,6 +20,12 @@ down:  ## Stop local services (data is kept)
 
 logs:  ## Follow service logs
 	docker compose logs -f
+
+migrate:  ## Apply database migrations
+	uv run --extra api alembic upgrade head
+
+revision:  ## New migration from model changes: make revision m="add x"
+	uv run --extra api alembic revision --autogenerate -m "$(m)"
 
 run:  ## Start the API with reload (API_PORT=8000)
 	uv run --all-extras uvicorn server.main:app --reload --host 0.0.0.0 --port $(API_PORT)
