@@ -46,7 +46,10 @@ def test_shaky_voice_raises_jitter_and_spike():
     assert spikes
     # The steady first window is never a spike.
     assert all(f.note.t_start_ms >= 10_000 for f in spikes)
-    assert "0:10-0:25" in spikes[0].summary or "0:20-0:30" in spikes[0].summary
+    # The two shaky windows merge into one stretch.
+    assert len(spikes) == 1
+    assert "0:10-0:30" in spikes[0].summary
+    assert spikes[0].details["windows"] == 2
 
 
 def test_breathy_voice_has_low_hnr_and_high_shimmer():
@@ -122,3 +125,30 @@ def test_score_voice_from_a_path_and_from_storage(tmp_path):
 
     report = score_voice("users/1/voice.wav", Store(), mode="qa")
     assert report.mode == "qa"
+
+
+def test_overlapping_windows_merge_into_one_stretch():
+    from ai.voice.rate import RateWindow
+    from ai.voice.report import stretches
+
+    w = [
+        RateWindow(0, 15, 2.0),
+        RateWindow(10, 25, 2.1),
+        RateWindow(20, 35, 4.0),
+        RateWindow(30, 45, 2.2),
+        RateWindow(60, 75, 2.0),  # a gap: a new stretch
+    ]
+    runs = stretches(w, lambda x: "slow" if x.syllables_per_s < 3 else None)
+    assert [[(x.t_start_s, x.t_end_s) for x in run] for _, run in runs] == [
+        [(0, 15), (10, 25)],
+        [(30, 45)],
+        [(60, 75)],
+    ]
+
+
+def test_long_slow_stretch_is_one_pace_finding():
+    report = analyze_voice(signal(syllables(25.0, 4.0), syllables(30.0, 1.8)))
+    drops = [f for f in report.findings if f.category == "pace_drop"]
+    assert len(drops) == 1
+    assert drops[0].details["windows"] >= 2
+    assert drops[0].note.t_end_ms == 55_000

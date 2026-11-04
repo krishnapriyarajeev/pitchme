@@ -7,17 +7,18 @@ questions, where a shakier voice and a less even pace are normal.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Protocol, TypeVar
 
 from ai.core.types import Finding, Severity, TimestampedNote
 from ai.utils.media import MediaStore, local_media
 
 from .loudness import LoudnessReport, analyze_loudness
-from .pitch import IntonationReport, PitchReport, analyze_intonation, analyze_pitch
+from .pitch import IntonationReport, PitchReport, PitchWindow, analyze_intonation, analyze_pitch
 from .quality import NervousnessReport, analyze_nervousness
-from .rate import SpeakingRateReport, analyze_rate
+from .rate import RateWindow, SpeakingRateReport, analyze_rate
 from .signal import MIN_DURATION_S, AudioSignal, load_audio
 
 PIPELINE = "voice"
@@ -34,6 +35,14 @@ LOUDNESS_DROP_DB = 8.0
 JITTER_SPIKE_FACTOR = 1.3
 # Window findings of one kind are capped, worst first.
 MAX_WINDOW_FINDINGS = 3
+
+
+class _Window(Protocol):
+    t_start_s: float
+    t_end_s: float
+
+
+W = TypeVar("W", bound=_Window)
 
 
 @dataclass(frozen=True)
@@ -98,6 +107,21 @@ def _span(start_s: float, end_s: float) -> str:
     return f"{_clock(start_s)}-{_clock(end_s)}"
 
 
+def stretches(windows: Sequence[W], kind: Callable[[W], str | None]) -> list[tuple[str, list[W]]]:
+    """Runs of overlapping or touching windows of the same kind. Windows
+    overlap, so one long problem would otherwise give a finding per window."""
+    runs: list[tuple[str, list[W]]] = []
+    for w in windows:
+        k = kind(w)
+        if k is None:
+            continue
+        if runs and runs[-1][0] == k and w.t_start_s <= runs[-1][1][-1].t_end_s:
+            runs[-1][1].append(w)
+        else:
+            runs.append((k, [w]))
+    return runs
+
+
 def _finding(category: str, severity: Severity, summary: str, **kwargs) -> Finding:
     return Finding(
         pipeline=PIPELINE, category=category, severity=severity, summary=summary, **kwargs
@@ -134,16 +158,23 @@ def _energy_findings(loudness: LoudnessReport, t: Thresholds) -> list[Finding]:
                 details={"loudness_std_db": loudness.std_db},
             )
         )
-    drops = [w for w in loudness.windows if w.mean_db < loudness.mean_db - LOUDNESS_DROP_DB]
-    for w in sorted(drops, key=lambda w: w.mean_db)[:MAX_WINDOW_FINDINGS]:
+    bar = loudness.mean_db - LOUDNESS_DROP_DB
+    runs = stretches(loudness.windows, lambda w: "loudness_drop" if w.mean_db < bar else None)
+    worst = sorted((min(run, key=lambda w: w.mean_db), run) for _, run in runs)
+    for w, run in worst[:MAX_WINDOW_FINDINGS]:
+        start, end = run[0].t_start_s, run[-1].t_end_s
         findings.append(
             _finding(
                 "loudness_drop",
                 Severity.LOW,
-                f"Volume dropped at {_span(w.t_start_s, w.t_end_s)} ({w.mean_db:.1f} dB against "
+                f"Volume dropped at {_span(start, end)} (down to {w.mean_db:.1f} dB against "
                 f"your usual {loudness.mean_db:.1f} dB).",
-                note=_note(w.t_start_s, w.t_end_s),
-                details={"window_mean_db": w.mean_db, "global_mean_db": loudness.mean_db},
+                note=_note(start, end),
+                details={
+                    "window_mean_db": w.mean_db,
+                    "global_mean_db": loudness.mean_db,
+                    "windows": len(run),
+                },
             )
         )
     return findings
@@ -187,19 +218,23 @@ def _nervousness_findings(nervousness: NervousnessReport, t: Thresholds) -> list
     # every window.
     baseline = nervousness.jitter_local
     spike_at = max(t.jitter_high * 1.5, baseline * JITTER_SPIKE_FACTOR)
-    spikes = [w for w in nervousness.windows if w.jitter_local > spike_at]
-    for w in sorted(spikes, key=lambda w: -w.jitter_local)[:MAX_WINDOW_FINDINGS]:
+    runs = stretches(nervousness.windows, lambda w: "spike" if w.jitter_local > spike_at else None)
+    worst = [(max(run, key=lambda w: w.jitter_local), run) for _, run in runs]
+    worst.sort(key=lambda pair: -pair[0].jitter_local)
+    for w, run in worst[:MAX_WINDOW_FINDINGS]:
+        start, end = run[0].t_start_s, run[-1].t_end_s
         findings.append(
             _finding(
                 "nervousness_spike",
                 Severity.MEDIUM,
-                f"Your voice was shakiest at {_span(w.t_start_s, w.t_end_s)} (jitter "
+                f"Your voice was shaky at {_span(start, end)} (jitter up to "
                 f"{w.jitter_local:.3f} against your usual {baseline:.3f}).",
-                note=_note(w.t_start_s, w.t_end_s),
+                note=_note(start, end),
                 details={
                     "jitter_local": w.jitter_local,
                     "shimmer_local": w.shimmer_local,
                     "hnr_db": w.hnr_db,
+                    "windows": len(run),
                 },
             )
         )
@@ -209,19 +244,33 @@ def _nervousness_findings(nervousness: NervousnessReport, t: Thresholds) -> list
 def _pitch_window_findings(pitch: PitchReport) -> list[Finding]:
     high = pitch.mean_hz * PITCH_WINDOW_DEVIATION_FACTOR
     low = pitch.mean_hz / PITCH_WINDOW_DEVIATION_FACTOR
-    outliers = [w for w in pitch.windows if w.mean_hz > high or 0 < w.mean_hz < low]
-    outliers.sort(key=lambda w: -abs(w.mean_hz - pitch.mean_hz))
+
+    def kind(w: PitchWindow) -> str | None:
+        if w.mean_hz > high:
+            return "pitch_too_high"
+        if 0 < w.mean_hz < low:
+            return "pitch_too_low"
+        return None
+
+    off = lambda w: abs(w.mean_hz - pitch.mean_hz)  # noqa: E731
+    worst = [(category, max(run, key=off), run) for category, run in stretches(pitch.windows, kind)]
+    worst.sort(key=lambda item: -off(item[1]))
     findings = []
-    for w in outliers[:MAX_WINDOW_FINDINGS]:
-        up = w.mean_hz > high
+    for category, w, run in worst[:MAX_WINDOW_FINDINGS]:
+        start, end = run[0].t_start_s, run[-1].t_end_s
         findings.append(
             _finding(
-                "pitch_too_high" if up else "pitch_too_low",
+                category,
                 Severity.LOW,
-                f"Pitch {'rose' if up else 'dropped'} at {_span(w.t_start_s, w.t_end_s)} "
-                f"({w.mean_hz:.0f} Hz against your usual {pitch.mean_hz:.0f} Hz).",
-                note=_note(w.t_start_s, w.t_end_s),
-                details={"window_mean_hz": w.mean_hz, "global_mean_hz": pitch.mean_hz},
+                f"Pitch {'rose' if category == 'pitch_too_high' else 'dropped'} at "
+                f"{_span(start, end)} ({w.mean_hz:.0f} Hz against your usual "
+                f"{pitch.mean_hz:.0f} Hz).",
+                note=_note(start, end),
+                details={
+                    "window_mean_hz": w.mean_hz,
+                    "global_mean_hz": pitch.mean_hz,
+                    "windows": len(run),
+                },
             )
         )
     return findings
@@ -241,20 +290,28 @@ def _rate_findings(rate: SpeakingRateReport, t: Thresholds) -> list[Finding]:
             )
         )
 
+    def kind(w: RateWindow) -> str | None:
+        if w.syllables_per_s > high:
+            return "pace_spike"
+        if 0 < w.syllables_per_s < low:
+            return "pace_drop"
+        return None
+
     middle = (low + high) / 2
-    outside = [w for w in rate.windows if w.syllables_per_s > high or 0 < w.syllables_per_s < low]
-    outside.sort(key=lambda w: -abs(w.syllables_per_s - middle))
-    for w in outside[:MAX_WINDOW_FINDINGS]:
-        fast = w.syllables_per_s > high
+    off = lambda w: abs(w.syllables_per_s - middle)  # noqa: E731
+    worst = [(category, max(run, key=off), run) for category, run in stretches(rate.windows, kind)]
+    worst.sort(key=lambda item: -off(item[1]))
+    for category, w, run in worst[:MAX_WINDOW_FINDINGS]:
+        start, end = run[0].t_start_s, run[-1].t_end_s
         findings.append(
             _finding(
-                "pace_spike" if fast else "pace_drop",
+                category,
                 Severity.LOW,
-                f"You spoke too {'fast' if fast else 'slowly'} at "
-                f"{_span(w.t_start_s, w.t_end_s)} ({w.syllables_per_s:.1f} syllables a second, "
+                f"You spoke too {'fast' if category == 'pace_spike' else 'slowly'} at "
+                f"{_span(start, end)} ({w.syllables_per_s:.1f} syllables a second, "
                 f"comfortable: {low}-{high}).",
-                note=_note(w.t_start_s, w.t_end_s),
-                details={"window_sps": w.syllables_per_s},
+                note=_note(start, end),
+                details={"window_sps": w.syllables_per_s, "windows": len(run)},
             )
         )
     return findings
