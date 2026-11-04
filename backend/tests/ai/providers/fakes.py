@@ -37,3 +37,20 @@ class FakeGenAI:
         if self._error:
             raise self._error
         return SimpleNamespace(text=self._text)
+
+
+class FakeTranscriptions:
+    """Mimics `client.audio.transcriptions.create(...)` of the Groq SDK."""
+
+    def __init__(self, data: dict[str, Any] | None = None, error: Exception | None = None):
+        self.calls: list[dict[str, Any]] = []
+        self._data = data or {}
+        self._error = error
+        self.audio = SimpleNamespace(transcriptions=SimpleNamespace(create=self._create))
+
+    def _create(self, **kwargs: Any) -> Any:
+        kwargs["file"] = (kwargs["file"][0], kwargs["file"][1].read())
+        self.calls.append(kwargs)
+        if self._error:
+            raise self._error
+        return SimpleNamespace(model_dump=lambda: self._data)
