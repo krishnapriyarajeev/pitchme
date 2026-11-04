@@ -11,7 +11,9 @@ from typing import Any
 
 from ai.core.llm import LLMClient, LLMError, parse_json_object
 
-DEFAULT_MODEL = "gemini-2.0-flash"
+DEFAULT_MODEL = "gemini-3.8-flash"
+# The SDK does not retry by default; 429 and 503 ("high demand") pass quickly.
+RETRY_ATTEMPTS = 4
 KEY_HELP = "GEMINI_API_KEY is not set. Get a free key at https://aistudio.google.com/apikey"
 
 
@@ -28,8 +30,16 @@ class GeminiClient(LLMClient):
             if not api_key:
                 raise LLMError(KEY_HELP)
             from google import genai
+            from google.genai import types
 
-            client = genai.Client(api_key=api_key)
+            client = genai.Client(
+                api_key=api_key,
+                http_options=types.HttpOptions(
+                    retry_options=types.HttpRetryOptions(
+                        attempts=RETRY_ATTEMPTS, http_status_codes=[429, 500, 503]
+                    )
+                ),
+            )
         self._client = client
         self.model = model
         self._max_output_tokens = max_output_tokens

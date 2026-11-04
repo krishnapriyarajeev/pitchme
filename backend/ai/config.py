@@ -25,7 +25,7 @@ class AISettings(BaseSettings):
     groq_api_key: SecretStr = SecretStr("")
     groq_model: str = "openai/gpt-oss-20b"
     gemini_api_key: SecretStr = SecretStr("")
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_model: str = "gemini-3.8-flash"
     # Room for a long transcript judged against a full reference document.
     llm_max_output_tokens: int = 4096
 
