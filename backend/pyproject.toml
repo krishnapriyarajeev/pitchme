@@ -6,7 +6,19 @@ readme = "README.md"
 requires-python = ">=3.11,<3.13"
 license = { text = "MIT" }
 authors = [{ name = "Krishnapriya Rajeev" }]
-dependencies = []
+dependencies = [
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+]
+
+[project.optional-dependencies]
+# Installed per area so working on the API does not pull in torch.
+# `uv sync --all-extras` installs everything.
+api = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "httpx>=0.27",
+]
 
 [dependency-groups]
 dev = [
@@ -27,7 +39,7 @@ packages = ["ai", "server"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-src = ["ai", "server", "tests"]
+src = ["."]
 extend-exclude = ["alembic/versions"]
 
 [tool.ruff.lint]

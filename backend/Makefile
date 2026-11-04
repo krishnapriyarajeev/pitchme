@@ -1,5 +1,7 @@
 .DEFAULT_GOAL := help
-.PHONY: help dev up down logs test test-all lint fmt check clean reset
+.PHONY: help dev up down logs run practice test test-all lint fmt check clean reset
+
+API_PORT ?= 8000
 
 help:  ## List the targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -18,6 +20,12 @@ down:  ## Stop local services (data is kept)
 
 logs:  ## Follow service logs
 	docker compose logs -f
+
+run:  ## Start the API with reload (API_PORT=8000)
+	uv run --all-extras uvicorn server.main:app --reload --host 0.0.0.0 --port $(API_PORT)
+
+practice:  ## Full stack for phone testing: Docker, API and agent
+	API_PORT=$(API_PORT) ./scripts/dev.sh
 
 test:  ## Unit tests (no services needed)
 	uv run pytest -m "not integration"
