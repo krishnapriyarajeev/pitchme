@@ -54,3 +54,19 @@ def test_groq_whisper():
     assert transcript.words
     assert all(word.start_ms <= word.end_ms for word in transcript.words)
     assert transcript.segments[0].confidence is not None
+
+
+@pytest.mark.parametrize("provider", ["groq", "gemini"])
+def test_filler_detection(provider):
+    from ai.core.transcript import Segment, Transcript, Word
+    from ai.speech.fluency import count_fillers
+
+    text = "So, um, our tool, like, cuts churn. Um, you know, customers like it."
+    words = tuple(Word(w, i * 400, i * 400 + 300) for i, w in enumerate(text.split()))
+    transcript = Transcript(segments=(Segment(text, 0, words[-1].end_ms, words),))
+    fillers, summary = count_fillers(transcript, make_llm_client(_settings(provider)))
+    found = {f.word: f.count for f in fillers}
+    assert found.get("um") == 2
+    # "like" in "customers like it" is a real verb, so at most one counts.
+    assert found.get("like", 0) <= 1
+    assert summary
