@@ -60,7 +60,9 @@ PRESETS: dict[str, Thresholds] = {
         jitter_high=0.02,
         shimmer_high=0.10,
         hnr_low=10.0,
-        rate_range=(3.0, 6.0),
+        # The slow bar matches speech's 110 wpm at about 1.5 syllables a
+        # word, so the two pipelines do not disagree on the same talk.
+        rate_range=(2.75, 6.0),
         monotone_st=4.0,
         loudness_flat_std=3.0,
     ),
