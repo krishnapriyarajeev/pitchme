@@ -12,7 +12,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pitchme-dev-secret}
       POSTGRES_DB: ${POSTGRES_DB:-pitchme}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pg-data:/var/lib/postgresql/data
     healthcheck:
@@ -31,8 +31,8 @@ services:
       # Console redirects must work from other devices on the LAN.
       MINIO_BROWSER_REDIRECT_URL: http://${MINIO_HOST:-localhost}:9001
     ports:
-      - "9000:9000"  # S3 API
-      - "9001:9001"  # web console
+      - "${MINIO_PORT:-9000}:9000"  # S3 API
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"  # web console
     volumes:
       - minio-data:/data
     healthcheck:
@@ -79,7 +79,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
