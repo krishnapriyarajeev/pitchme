@@ -4,7 +4,7 @@ Python 3.11+, managed with [uv](https://docs.astral.sh/uv/).
 
 ```
 backend/
-  ai/          analysis layer (providers, pipelines, Q&A agent, voice cloning)
+  ai/          analysis layer (core contracts, providers, pipelines, voice cloning)
   server/      FastAPI app (config, logging, routes)
   scripts/     dev.sh and helper scripts
   tests/
@@ -78,6 +78,41 @@ Media lives in an S3 bucket (MinIO locally) and never streams through the API.
 The app uploads to presigned URLs; workers read from the bucket. Every object a
 user owns sits under `users/<user_id>/` (see `server/storage/keys.py`).
 
+## AI layer
+
+`ai/` holds everything that analyses a call. It has no HTTP layer or
+database and never imports `server/` (a test checks this), so a script, a
+test or the LiveKit worker can call it directly.
+
+| Module | What it holds |
+|---|---|
+| `ai/core` | `LLMClient`, `Transcript` (segments and words with timing), `Finding` and `Severity` |
+| `ai/transcribe` | `TranscribeClient` interface |
+| `ai/providers` | Groq and Gemini LLMs, Groq Whisper and local faster-whisper, and the factories |
+| `ai/utils` | `extract_audio` (ffmpeg to 16 kHz mono WAV), `local_media` (path or storage key to a local file) |
+| `ai/config.py` | Provider settings, read from the same `.env` |
+
+Code asks for a client and never names a provider:
+
+```python
+from ai.providers import get_llm_client, get_transcribe_client
+
+verdict = get_llm_client().complete_json(prompt, schema=schema)
+transcript = get_transcribe_client().transcribe("call.wav")
+```
+
+| Setting | Values | Default |
+|---|---|---|
+| `LLM_PROVIDER` | `groq`, `gemini` | `groq` |
+| `TRANSCRIBE_PROVIDER` | `groq`, `local` | `groq` |
+| `GROQ_MODEL` / `GEMINI_MODEL` | model ids | `openai/gpt-oss-20b` / `gemini-3.8-flash` |
+| `WHISPER_MODEL` | Groq Whisper model | `whisper-large-v3-turbo` |
+| `WHISPER_MODEL_SIZE` / `WHISPER_DEVICE` | local model and device | `base` / `auto` |
+
+Groq gives confidence per segment only, so its words have `logprob=None`.
+Local faster-whisper gives a real per-word confidence. ffmpeg must be
+installed for audio extraction.
+
 ## Checks
 
 ```bash
@@ -85,11 +120,12 @@ make test   # unit tests, no services needed
 make lint   # ruff format + lint
 make check  # what CI runs
 make test-all  # starts services, then runs integration tests too
+make test-live # real Groq and Gemini calls with the keys in .env (spends quota)
 ```
 
 Integration tests create a throwaway database and bucket, and skip when
 Postgres or MinIO is not running.
 
-Optional dependencies are split by area (`api` for now) so a change to one
-part does not pull in heavy libraries from another. `uv sync --all-extras`
+Optional dependencies are split by area (`api`, `llm`, `whisper-local`) so a
+change to one part does not pull in heavy libraries from another. `uv sync --all-extras`
 installs all of them.

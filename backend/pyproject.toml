@@ -27,6 +27,16 @@ api = [
     "email-validator>=2.2",
     "python-multipart>=0.0.12",
 ]
+# Hosted LLM and transcription clients (Groq, Gemini).
+llm = [
+    "groq>=0.13",
+    "google-genai>=1.0",
+]
+# Offline transcription with faster-whisper. Large download; only needed
+# when TRANSCRIBE_PROVIDER=local.
+whisper-local = [
+    "faster-whisper>=1.1",
+]
 
 [dependency-groups]
 dev = [
@@ -66,10 +76,11 @@ docstring-code-format = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-ra --strict-markers --cov=ai --cov=server --cov-report=term-missing"
+addopts = "-ra --strict-markers -m 'not live' --cov=ai --cov=server --cov-report=term-missing"
 asyncio_mode = "auto"
 markers = [
-    "integration: needs running services (Postgres, MinIO, LiveKit) or real provider keys",
+    "integration: needs running services (Postgres, MinIO, LiveKit)",
+    "live: calls a hosted provider and spends quota; run with make test-live",
 ]
 
 [tool.coverage.report]
