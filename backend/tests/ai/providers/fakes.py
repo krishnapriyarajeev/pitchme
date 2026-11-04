@@ -21,3 +21,19 @@ class FakeChat:
             raise self._error
         message = SimpleNamespace(content=self._reply)
         return SimpleNamespace(choices=[SimpleNamespace(message=message)])
+
+
+class FakeGenAI:
+    """Mimics `client.models.generate_content(...)` of google-genai."""
+
+    def __init__(self, text: str | None = "ok", error: Exception | None = None) -> None:
+        self.calls: list[dict[str, Any]] = []
+        self._text = text
+        self._error = error
+        self.models = SimpleNamespace(generate_content=self._generate)
+
+    def _generate(self, **kwargs: Any) -> Any:
+        self.calls.append(kwargs)
+        if self._error:
+            raise self._error
+        return SimpleNamespace(text=self._text)
