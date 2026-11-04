@@ -15,6 +15,13 @@ def test_builds_sdk_client_from_key():
     assert GeminiClient(api_key="test-key-not-used", model="m").model == "m"
 
 
+def test_retries_busy_responses_but_not_quota_errors():
+    client = GeminiClient(api_key="test-key-not-used")
+    retry = client._client._api_client._http_options.retry_options
+    assert retry.attempts == 4
+    assert retry.http_status_codes == [500, 503]
+
+
 def test_complete_passes_system_instruction():
     fake = FakeGenAI(text="pong")
     client = GeminiClient(client=fake, model="m", max_output_tokens=99)

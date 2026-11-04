@@ -12,8 +12,11 @@ from typing import Any
 from ai.core.llm import LLMClient, LLMError, parse_json_object
 
 DEFAULT_MODEL = "gemini-3.8-flash"
-# The SDK does not retry by default; 429 and 503 ("high demand") pass quickly.
+# The SDK does not retry by default; 500 and 503 ("high demand") pass
+# quickly. 429 is not retried: on the free tier it is usually the daily
+# quota, and every retry spends more of it.
 RETRY_ATTEMPTS = 4
+RETRY_STATUS_CODES = (500, 503)
 KEY_HELP = "GEMINI_API_KEY is not set. Get a free key at https://aistudio.google.com/apikey"
 
 
@@ -36,7 +39,7 @@ class GeminiClient(LLMClient):
                 api_key=api_key,
                 http_options=types.HttpOptions(
                     retry_options=types.HttpRetryOptions(
-                        attempts=RETRY_ATTEMPTS, http_status_codes=[429, 500, 503]
+                        attempts=RETRY_ATTEMPTS, http_status_codes=list(RETRY_STATUS_CODES)
                     )
                 ),
             )
