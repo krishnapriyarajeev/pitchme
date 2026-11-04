@@ -89,6 +89,8 @@ test or the LiveKit worker can call it directly.
 | `ai/core` | `LLMClient`, `Transcript` (segments and words with timing), `Finding` and `Severity` |
 | `ai/transcribe` | `TranscribeClient` interface |
 | `ai/providers` | Groq and Gemini LLMs, Groq Whisper and local faster-whisper, and the factories |
+| `ai/speech` | Fluency (pace, pauses, fillers) and articulation from the transcript |
+| `ai/voice` | Pitch, intonation, loudness, nervousness and syllable rate from the waveform |
 | `ai/utils` | `extract_audio` (ffmpeg to 16 kHz mono WAV), `local_media` (path or storage key to a local file) |
 | `ai/config.py` | Provider settings, read from the same `.env` |
 
@@ -113,6 +115,36 @@ Groq gives confidence per segment only, so its words have `logprob=None`.
 Local faster-whisper gives a real per-word confidence. ffmpeg must be
 installed for audio extraction.
 
+### Speech and voice
+
+```python
+from ai.speech import score_speech
+from ai.voice import score_voice
+
+speech = score_speech(transcript)  # one LLM call, for fillers
+voice = score_voice("call.wav", mode="qa")  # a path or a storage key; no LLM
+for finding in speech.findings + voice.findings:
+    print(finding.severity, finding.summary)
+```
+
+Both return their raw measures plus a list of `Finding`s, most severe
+first. Only patterns a listener would notice become findings.
+
+| Pipeline | Measures | Findings |
+|---|---|---|
+| Speech | Words per minute in rolling 15 s windows, pauses (hesitation or deliberate), fillers, clarity | Pace too fast or slow, frequent fillers, hesitation runs, unclear articulation |
+| Voice | Pitch and range, monotone share, loudness over speech frames, jitter, shimmer, HNR, syllables a second | Monotone, flat energy, volume drops, tension, nervousness spikes, pace, pitch outliers |
+
+- **Fillers** have no fixed word list. The model decides what was a filler
+  in this talk, and each count is capped at how often the word appears in
+  the transcript.
+- **Articulation** uses per-word confidence from local faster-whisper. With
+  Groq, which scores segments only, a whole unsure segment is flagged.
+- **Voice modes:** `presentation` (default) and `qa`. Q&A thresholds are
+  looser, because answers are unrehearsed.
+- The voice pipeline needs the `voice` extra (numpy and Praat through
+  parselmouth) and ffmpeg for anything that is not a 16 kHz mono WAV.
+
 ## Checks
 
 ```bash
@@ -126,6 +158,6 @@ make test-live # real Groq and Gemini calls with the keys in .env (spends quota)
 Integration tests create a throwaway database and bucket, and skip when
 Postgres or MinIO is not running.
 
-Optional dependencies are split by area (`api`, `llm`, `whisper-local`) so a
+Optional dependencies are split by area (`api`, `llm`, `voice`, `whisper-local`) so a
 change to one part does not pull in heavy libraries from another. `uv sync --all-extras`
 installs all of them.
