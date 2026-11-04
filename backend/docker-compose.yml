@@ -1,5 +1,9 @@
 name: pitchme
 
+# Local stack: Postgres, MinIO, Redis, LiveKit and LiveKit Egress.
+# Values come from .env (see .env.example). LIVEKIT_API_SECRET has no default
+# on purpose: set it in .env (32+ characters) before `make up`.
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -24,6 +28,8 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-pitchme}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-pitchme-dev-secret}
+      # Console redirects must work from other devices on the LAN.
+      MINIO_BROWSER_REDIRECT_URL: http://${MINIO_HOST:-localhost}:9001
     ports:
       - "9000:9000"  # S3 API
       - "9001:9001"  # web console
@@ -36,7 +42,7 @@ services:
       retries: 12
     restart: unless-stopped
 
-  # Runs once: creates the private media bucket, then exits.
+  # Runs once: creates the private media bucket and its CORS rules, then exits.
   minio-init:
     image: quay.io/minio/mc:latest
     depends_on:
@@ -53,6 +59,79 @@ services:
         mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"
         mc mb --ignore-existing "local/$$MEDIA_BUCKET"
         mc anonymous set none "local/$$MEDIA_BUCKET"
+        mc version suspend "local/$$MEDIA_BUCKET" >/dev/null 2>&1 || true
+        # The app uploads straight to presigned URLs (web build included).
+        cat >/tmp/cors.json <<'EOF'
+        {
+          "CORSRules": [
+            {
+              "AllowedOrigins": ["*"],
+              "AllowedMethods": ["GET", "PUT", "POST", "HEAD"],
+              "AllowedHeaders": ["*"],
+              "ExposeHeaders": ["ETag", "Content-Length", "Content-Type"],
+              "MaxAgeSeconds": 3600
+            }
+          ]
+        }
+        EOF
+        mc cors set "local/$$MEDIA_BUCKET" /tmp/cors.json || echo "warn: CORS not applied"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  livekit:
+    image: livekit/livekit-server:latest
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      # LIVEKIT_KEYS is "key: secret"; the server reads it instead of a keys file.
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET in .env}"
+    command: >
+      --config-body "{port: 7880, rtc: {tcp_port: 7881, port_range_start: 50000,
+      port_range_end: 50020, use_external_ip: false}, redis: {address: 'redis:6379'}}"
+      --node-ip ${LAN_IP:-127.0.0.1}
+    ports:
+      - "7880:7880"
+      - "7881:7881/tcp"
+      - "50000-50020:50000-50020/udp"
+    restart: unless-stopped
+
+  # Records each rehearsal room to MinIO (recordings/<session>.mp4).
+  livekit-egress:
+    image: livekit/egress:latest
+    cap_add:
+      - SYS_ADMIN
+    depends_on:
+      livekit:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      EGRESS_CONFIG_BODY: |
+        api_key: ${LIVEKIT_API_KEY:-devkey}
+        api_secret: "${LIVEKIT_API_SECRET:?set LIVEKIT_API_SECRET in .env}"
+        ws_url: ws://livekit:7880
+        insecure: true
+        redis:
+          address: redis:6379
+        s3:
+          access_key: ${S3_ACCESS_KEY:-${MINIO_ROOT_USER:-pitchme}}
+          secret: "${S3_SECRET_KEY:-${MINIO_ROOT_PASSWORD:-pitchme-dev-secret}}"
+          endpoint: http://minio:9000
+          bucket: ${MEDIA_BUCKET:-pitchme}
+          force_path_style: true
+    restart: unless-stopped
 
 volumes:
   pg-data:
