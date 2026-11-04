@@ -36,10 +36,11 @@ def db_sessionmaker(db_engine):
 
 
 @pytest.fixture
-def api(db_sessionmaker, monkeypatch) -> TestClient:
+def api(db_sessionmaker, storage, monkeypatch) -> TestClient:
     from server.config import Settings, get_settings
     from server.db.session import get_db
     from server.main import create_app
+    from server.storage import get_storage
 
     settings = Settings(log_dir="", jwt_secret="test-jwt-secret-" + "z" * 32)
     monkeypatch.setattr("server.security.get_settings", lambda: settings)
@@ -54,6 +55,7 @@ def api(db_sessionmaker, monkeypatch) -> TestClient:
 
     app = create_app(settings)
     app.dependency_overrides[get_db] = _db
+    app.dependency_overrides[get_storage] = lambda: storage
     return TestClient(app)
 
 
