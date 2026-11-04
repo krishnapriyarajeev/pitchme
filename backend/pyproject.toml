@@ -27,6 +27,16 @@ api = [
     "email-validator>=2.2",
     "python-multipart>=0.0.12",
 ]
+# Hosted LLM and transcription clients (Groq, Gemini).
+llm = [
+    "groq>=0.13",
+    "google-genai>=1.0",
+]
+# Offline transcription with faster-whisper. Large download; only needed
+# when TRANSCRIBE_PROVIDER=local.
+whisper-local = [
+    "faster-whisper>=1.1",
+]
 
 [dependency-groups]
 dev = [
