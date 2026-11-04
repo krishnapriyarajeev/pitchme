@@ -13,13 +13,46 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    # Throwaway values for the CI containers only.
+    env:
+      POSTGRES_USER: pitchme
+      POSTGRES_PASSWORD: ci-only
+      POSTGRES_DB: pitchme
+      MINIO_ROOT_USER: pitchme
+      MINIO_ROOT_PASSWORD: ci-only-minio
+      S3_ENDPOINT: http://localhost:9000
+      JWT_SECRET: ci-only-jwt-secret-not-used-anywhere-else
+      AI_CALLBACK_KEY: ci-only-callback-key
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: pitchme
+          POSTGRES_PASSWORD: ci-only
+          POSTGRES_DB: pitchme
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U pitchme"
+          --health-interval 5s --health-timeout 3s --health-retries 12
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
           enable-cache: true
+      # Service containers cannot take a command, so MinIO starts here.
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER -e MINIO_ROOT_PASSWORD \
+            cgr.dev/chainguard/minio:latest server /data
+          for i in $(seq 1 30); do
+            curl -fs http://localhost:9000/minio/health/live && exit 0
+            sleep 1
+          done
+          docker logs minio
+          exit 1
       - run: uv sync --extra api --group dev
       - run: uv run ruff format --check .
       - run: uv run ruff check .
-      - run: uv run pytest -m "not integration"
+      - run: uv run pytest

@@ -12,7 +12,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from server import __version__
+from server.api import auth, profile
 from server.config import Settings, get_settings
+from server.errors import install_error_handlers
 from server.logging_config import configure_logging
 
 log = logging.getLogger(__name__)
@@ -40,6 +42,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    install_error_handlers(app)
+    app.include_router(auth.router)
+    app.include_router(profile.router)
 
     @app.get("/health", tags=["infra"])
     def health() -> dict[str, str]:

@@ -5,12 +5,20 @@ make up && uv run pytest -m integration
 
 from __future__ import annotations
 
+import os
 import socket
 import uuid
 from collections.abc import Iterator
 from urllib.parse import urlparse
 
 import pytest
+
+
+def _require(reason: str) -> None:
+    """Skip locally, but fail in CI where the services are expected to run."""
+    if os.environ.get("CI"):
+        pytest.fail(f"{reason} in CI")
+    pytest.skip(reason)
 
 
 def _reachable(url: str, default_port: int) -> bool:
@@ -32,7 +40,7 @@ def pg_url() -> Iterator[str]:
 
     base = make_url(get_settings().db_url)
     if not _reachable(f"pg://{base.host}:{base.port}", 5432):
-        pytest.skip("Postgres not reachable (make up)")
+        _require("Postgres not reachable (make up)")
 
     name = f"pitchme_test_{uuid.uuid4().hex[:8]}"
     admin = create_engine(base.set(database="postgres"), isolation_level="AUTOCOMMIT")
@@ -55,7 +63,7 @@ def storage():
 
     settings = Settings(media_bucket=f"pitchme-test-{uuid.uuid4().hex[:8]}")
     if not _reachable(settings.s3_endpoint, 9000):
-        pytest.skip("MinIO not reachable (make up)")
+        _require("MinIO not reachable (make up)")
 
     client = Storage(settings)
     client.ensure_bucket()
