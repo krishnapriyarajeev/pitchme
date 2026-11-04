@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help dev up down logs migrate revision run practice test test-all lint fmt check clean reset
+.PHONY: help dev up down logs migrate revision run practice test test-all test-live lint fmt check clean reset
 
 API_PORT ?= 8000
 
@@ -34,10 +34,13 @@ practice:  ## Full stack for phone testing: Docker, API and agent
 	API_PORT=$(API_PORT) ./scripts/dev.sh
 
 test:  ## Unit tests (no services needed)
-	uv run pytest -m "not integration"
+	uv run pytest -m "not integration and not live"
 
 test-all: up  ## All tests, including integration
 	uv run pytest
+
+test-live:  ## Real provider calls (spends quota; keys from .env)
+	uv run --extra llm pytest -m live --no-cov -v
 
 lint:  ## Check format and lint
 	uv run ruff format --check .
