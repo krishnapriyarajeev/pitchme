@@ -54,7 +54,13 @@ jobs:
           exit 1
       - name: Install ffmpeg
         run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
-      - run: uv sync --extra api --extra llm --extra voice --group dev
+      - run: uv sync --extra api --extra llm --extra voice --extra vision --group dev
+      - name: Cache MediaPipe models
+        uses: actions/cache@v4
+        with:
+          path: backend/ai/models/*.task
+          key: mediapipe-${{ hashFiles('backend/scripts/download_models.sh') }}
+      - run: ./scripts/download_models.sh
       - run: uv run ruff format --check .
       - run: uv run ruff check .
       - run: uv run pytest

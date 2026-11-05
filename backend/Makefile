@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help dev up down logs migrate revision run practice test test-all test-live lint fmt check clean reset
+.PHONY: help dev models up down logs migrate revision run practice test test-all test-live lint fmt check clean reset
 
 API_PORT ?= 8000
 
@@ -10,6 +10,9 @@ help:  ## List the targets
 dev:  ## Install dependencies and create .env
 	uv sync --all-extras --group dev
 	@test -f .env || cp .env.example .env
+
+models:  ## Download the MediaPipe models for the vision pipeline
+	./scripts/download_models.sh
 
 up:  ## Start local services
 	docker compose up -d
