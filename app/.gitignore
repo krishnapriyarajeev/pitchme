@@ -1,0 +1,11 @@
+# Native folders come from `expo prebuild` or EAS; they are not kept in git.
+/ios
+/android
+
+# Expo and Metro output
+.expo/
+dist/
+.metro-health-check*
+
+# Test output
+coverage/
