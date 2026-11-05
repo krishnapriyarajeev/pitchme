@@ -28,7 +28,7 @@ export default function RootLayout() {
 function RootStack() {
   const scheme = useScheme();
   const theme = useTheme();
-  const { status } = useAuth();
+  const { status, onboarding } = useAuth();
   // A font that fails to load falls back to the system font; the app still
   // opens rather than staying on the splash screen.
   const [fontsLoaded, fontError] = useFonts(FontFiles);
@@ -75,8 +75,12 @@ function RootStack() {
           animation: 'slide_from_right',
           contentStyle: { backgroundColor: theme.background },
         }}>
+        <Stack.Protected guard={signedIn && onboarding}>
+          <Stack.Screen name="onboard/voice" />
+        </Stack.Protected>
         <Stack.Protected guard={signedIn}>
           <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
+          <Stack.Screen name="profile/voice" />
         </Stack.Protected>
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="login" options={{ animation: 'fade' }} />
