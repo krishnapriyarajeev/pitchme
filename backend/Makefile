@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help dev models up down logs migrate revision run practice test test-all test-live lint fmt check clean reset
+.PHONY: help dev models up down logs migrate revision run agent practice test test-all test-live lint fmt check clean reset
 
 API_PORT ?= 8000
 
@@ -32,6 +32,9 @@ revision:  ## New migration from model changes: make revision m="add x"
 
 run:  ## Start the API with reload (API_PORT=8000)
 	uv run --all-extras uvicorn server.main:app --reload --host 0.0.0.0 --port $(API_PORT)
+
+agent:  ## Start the LiveKit agent worker that plays the buyer
+	uv run --extra rehearsal python scripts/run_agent.py start
 
 practice:  ## Full stack for phone testing: Docker, API and agent
 	API_PORT=$(API_PORT) ./scripts/dev.sh

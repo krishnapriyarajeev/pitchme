@@ -118,6 +118,7 @@ docstring-code-format = true
 testpaths = ["tests"]
 addopts = "-ra --strict-markers -m 'not live' --cov=ai --cov=server --cov-report=term-missing"
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 markers = [
     "integration: needs running services (Postgres, MinIO, LiveKit)",
     "live: calls a hosted provider and spends quota; run with make test-live",

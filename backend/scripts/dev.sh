@@ -3,7 +3,7 @@
 #
 #   Docker: Postgres, MinIO, Redis, LiveKit, Egress
 #   API:    uvicorn with reload on $API_PORT (default 8000)
-#   Agent:  LiveKit agent worker, once scripts/run_agent.py exists
+#   Agent:  LiveKit agent worker (scripts/run_agent.py)
 #
 # Usage: make practice   (or ./scripts/dev.sh from backend/)
 # Ctrl-C stops the API and agent. Docker keeps running; `make down` stops it.

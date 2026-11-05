@@ -61,6 +61,12 @@ class AISettings(BaseSettings):
     # A call ends on its own after this long, so a phone left in a pocket
     # does not keep the buyer talking.
     rehearsal_max_minutes: int = 20
+    # The worker's health check port. LiveKit's default, 8081, is the port
+    # Expo's Metro bundler uses when the app runs on the same machine.
+    agent_port: int = 8082
+    # Job processes kept warm, each with Silero loaded. LiveKit's default of
+    # 12 is meant for a server, not a laptop.
+    agent_idle_processes: int = 2
     # The worker reports each finished call to the API at this address.
     server_public_base_url: str = "http://localhost:8000"
     ai_callback_key: SecretStr = SecretStr("")
