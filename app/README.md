@@ -87,6 +87,22 @@ the user to the first screen they may see.
 - **Onboarding:** sign-up opens steps 2 and 3. Both can be skipped, and both
   can be done later from Profile and the Playbook tab.
 
+## A rehearsal, end to end
+
+1. **Prepare:** the deal opens a LiveKit room. The join token stays in
+   memory (`src/lib/call-store.ts`), never in a route or URL, for the two
+   minutes the buyer waits.
+2. **Call:** camera and microphone go into the room, and the server records
+   it. The web build has no WebRTC, so it shows where the call runs.
+3. **Rehearsal page:** after the call it shows "saving" until the worker
+   reports, then the review choice. During the review it shows the job's
+   real stages, checking every 3 seconds.
+4. **Debrief:** every section reads the API's result. A section with no data
+   is left out; a part that was not scored says why.
+
+`rehearsalState` (`src/lib/sessions.ts`) turns the call status and the
+analysis status into one state, so every screen reads them the same way.
+
 ## API client
 
 `src/lib/api` follows the API schemas in `backend/server/schemas`. Keep the

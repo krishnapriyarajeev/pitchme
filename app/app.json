@@ -60,7 +60,8 @@
           "enableBackgroundRecording": false,
           "enableBackgroundPlayback": false
         }
-      ]
+      ],
+      "expo-video"
     ],
     "experiments": {
       "reactCompiler": true

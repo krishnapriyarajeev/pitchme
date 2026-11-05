@@ -83,6 +83,16 @@ function RootStack() {
           <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
           <Stack.Screen name="profile/edit" />
           <Stack.Screen name="profile/voice" />
+          <Stack.Screen name="sessions" />
+          <Stack.Screen name="session/[id]" />
+          <Stack.Screen name="debrief/[id]" />
+          <Stack.Screen name="progress" />
+          <Stack.Screen name="prepare" options={{ animation: 'slide_from_bottom' }} />
+          {/* The call is a room you enter, not a page: no swipe back out of it. */}
+          <Stack.Screen
+            name="call/[id]"
+            options={{ animation: 'slide_from_bottom', gestureEnabled: false }}
+          />
         </Stack.Protected>
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="login" options={{ animation: 'fade' }} />
