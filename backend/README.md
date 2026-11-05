@@ -239,6 +239,29 @@ Cutting to one speaker closes up the gaps, so the buyer's turns do not
 read as long hesitations by the user. `lines_from_turns(tagged.turns(),
 user.speaker)` gives the content judge its lines.
 
+### Voice cloning
+
+The user's voice is cloned once, in the background, when they upload a
+voice sample (see the API section). After a call, each answer the content
+judge flagged is rewritten and spoken in that voice:
+
+```python
+from ai.voice_cloning import correct_answers, speak_answers
+
+fixes = correct_answers(content_report.needs_work)
+clips = speak_answers(fixes, user.voice_clone_id)  # one WAV per stronger answer
+```
+
+- A rewrite may only use facts from the answer, the question and the
+  playbook. Every number in it, as digits or words, is checked against
+  those; one with a new number is marked unverified and is not spoken.
+- `correct_script` and `speak_script` lightly correct a solo talk with
+  delivery cues (emotion, speed, pauses) and render it as one WAV. A
+  rewrite that drifts from the original wording is spoken as said.
+- `VOICE_CLONE_PROVIDER` is `cartesia` (default) or `resemble`. Cartesia
+  applies emotion and speed only on `sonic-3` and later. Resemble also
+  needs a transcript of the sample and a consent recording URL.
+
 ## Checks
 
 ```bash
@@ -252,6 +275,6 @@ make test-live # real Groq and Gemini calls with the keys in .env (spends quota)
 Integration tests create a throwaway database and bucket, and skip when
 Postgres or MinIO is not running.
 
-Optional dependencies are split by area (`api`, `llm`, `voice`, `vision`, `content`, `diarize`, `whisper-local`) so a
+Optional dependencies are split by area (`api`, `llm`, `voice`, `vision`, `content`, `diarize`, `voice-clone`, `whisper-local`) so a
 change to one part does not pull in heavy libraries from another. `uv sync --all-extras`
 installs all of them.
