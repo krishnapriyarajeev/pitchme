@@ -86,3 +86,19 @@ class SessionDetail(SessionSummary):
     started_at: datetime | None
     ended_at: datetime | None
     end_reason: EndReason | None
+
+
+# ---- from the agent worker ----
+
+
+class CallStarted(BaseModel):
+    started_at: datetime
+
+
+class CallResults(BaseModel):
+    transcript: list[TranscriptTurn] = Field(default_factory=list, max_length=2000)
+    ended_by: EndReason
+    started_at: datetime | None = None
+    ended_at: datetime
+    duration_seconds: float | None = Field(default=None, ge=0)
+    error: str | None = Field(default=None, max_length=2000)

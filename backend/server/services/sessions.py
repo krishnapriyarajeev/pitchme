@@ -14,9 +14,11 @@ from sqlalchemy.orm import Session
 
 from ai.rehearsal.deal import CallSetup, Deal
 from server.config import Settings
-from server.db import PracticeSession, User
-from server.errors import NotFound
+from server.db import PracticeSession, SessionStatus, User
+from server.errors import Conflict, NotFound
 from server.schemas.sessions import (
+    CallResults,
+    CallStarted,
     CreateSessionRequest,
     CreateSessionResponse,
     SessionDetail,
@@ -27,6 +29,14 @@ from server.storage import Storage, StorageError
 from server.storage.keys import recording_key
 
 log = logging.getLogger(__name__)
+
+# How the call ended -> the session status.
+_FINAL_STATUS = {
+    "seller_left": SessionStatus.complete,
+    "time_limit": SessionStatus.complete,
+    "no_show": SessionStatus.failed,
+    "error": SessionStatus.failed,
+}
 
 
 def room_name(session_id: uuid.UUID) -> str:
@@ -141,3 +151,42 @@ def to_detail(row: PracticeSession, storage: Storage) -> SessionDetail:
         ended_at=row.ended_at,
         end_reason=row.end_reason,
     )
+
+
+# ---- reports from the agent worker ----
+
+
+def _get(db: Session, session_id: uuid.UUID) -> PracticeSession:
+    row = db.get(PracticeSession, session_id, with_for_update=True)
+    if row is None:
+        raise NotFound("Session not found.")
+    return row
+
+
+def mark_started(db: Session, session_id: uuid.UUID, body: CallStarted) -> None:
+    row = _get(db, session_id)
+    if row.status is not SessionStatus.waiting:
+        raise Conflict(f"Session is already {row.status}.")
+    row.status = SessionStatus.active
+    row.started_at = body.started_at
+    db.commit()
+
+
+def record_results(db: Session, session_id: uuid.UUID, body: CallResults) -> None:
+    """Saves the transcript and how the call ended. Reported once: a second
+    report would overwrite a finished call, so it is refused. A seller who
+    never joined has nothing to play back, so the session gets no recording."""
+    row = _get(db, session_id)
+    if row.status in (SessionStatus.complete, SessionStatus.failed):
+        raise Conflict(f"Session is already {row.status}.")
+    if body.error:
+        log.error("Call %s ended with an error: %s", session_id, body.error)
+    row.status = _FINAL_STATUS[body.ended_by]
+    row.end_reason = body.ended_by
+    row.transcript = [turn.model_dump() for turn in body.transcript]
+    row.started_at = body.started_at or row.started_at
+    row.ended_at = body.ended_at
+    row.duration_seconds = body.duration_seconds
+    if body.ended_by == "no_show":
+        row.recording_key = None
+    db.commit()
