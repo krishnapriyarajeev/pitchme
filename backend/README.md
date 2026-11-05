@@ -92,6 +92,8 @@ test or the LiveKit worker can call it directly.
 | `ai/speech` | Fluency (pace, pauses, fillers) and articulation from the transcript |
 | `ai/voice` | Pitch, intonation, loudness, nervousness and syllable rate from the waveform |
 | `ai/vision` | Posture, eye contact, expression and gestures from video, and the annotated video |
+| `ai/content` | Playbook extraction and the content judge (how each buyer question was answered) |
+| `ai/diarize` | Who spoke when, which voice is the user, and cutting a recording to one speaker |
 | `ai/utils` | `extract_audio` (ffmpeg to 16 kHz mono WAV), `local_media` (path or storage key to a local file) |
 | `ai/config.py` | Provider settings, read from the same `.env` |
 
@@ -185,6 +187,52 @@ slouch, eye contact, expression and wrist positions.
 - **Annotated video:** skeleton, badges, eye contact light, voice panel
   and running scores, encoded as H.264 with the original sound.
 
+### Content
+
+```python
+from ai.content import Line, extract_reference, score_content
+
+playbook = extract_reference("playbook.pdf")  # .pdf .pptx .docx .txt .md .vtt .srt
+report = score_content(lines, playbook)  # lines: Line(role, text, start_ms, end_ms, words)
+```
+
+One LLM call finds each buyer question or objection and judges the
+answer: `dodged`, `inaccurate`, `unsupported`, `weak` or `handled`, with a
+0-100 score and a coaching summary. Without a playbook it judges answers
+on their own merits, and the accuracy categories are not used. Each quote
+is found again in the conversation, to the exact words when the line has
+word timings, so a finding points at the right moment. PowerPoint speaker
+notes and tables are read too.
+
+### Diarization
+
+For one recording with two voices on it. Needs the `diarize` extra
+(pyannote and torch, a large download) and `HF_TOKEN`, a Hugging Face
+read token whose account accepted the licences of
+`pyannote/speaker-diarization-3.1` and `pyannote/segmentation-3.0`. Voice
+matching uses the WeSpeaker model from the same pipeline, which needs no
+other licence.
+
+```python
+import os
+
+from ai.diarize.align import tag_speakers
+from ai.diarize.filter_speaker import filter_transcript
+from ai.diarize.identify import identify_speaker
+from ai.providers import get_diarize_client
+from ai.providers.pyannote.embedding import PyannoteEmbedder
+
+segments = get_diarize_client().diarize("call.wav")
+embedder = PyannoteEmbedder(os.environ["HF_TOKEN"])
+user = identify_speaker(embedder, "call.wav", segments, "voice_sample.wav")
+tagged = tag_speakers(transcript, segments)
+user_only = filter_transcript(tagged, user.speaker, segments)  # for speech
+```
+
+Cutting to one speaker closes up the gaps, so the buyer's turns do not
+read as long hesitations by the user. `lines_from_turns(tagged.turns(),
+user.speaker)` gives the content judge its lines.
+
 ## Checks
 
 ```bash
@@ -198,6 +246,6 @@ make test-live # real Groq and Gemini calls with the keys in .env (spends quota)
 Integration tests create a throwaway database and bucket, and skip when
 Postgres or MinIO is not running.
 
-Optional dependencies are split by area (`api`, `llm`, `voice`, `vision`, `whisper-local`) so a
+Optional dependencies are split by area (`api`, `llm`, `voice`, `vision`, `content`, `diarize`, `whisper-local`) so a
 change to one part does not pull in heavy libraries from another. `uv sync --all-extras`
 installs all of them.

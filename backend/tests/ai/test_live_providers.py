@@ -70,3 +70,22 @@ def test_filler_detection(provider):
     # "like" in "customers like it" is a real verb, so at most one counts.
     assert found.get("like", 0) <= 1
     assert summary
+
+
+@pytest.mark.parametrize("provider", ["groq", "gemini"])
+def test_content_judge(provider):
+    from ai.content import Line, score_content
+
+    lines = (
+        Line("customer", "How much is the team plan?", 0, 2000),
+        Line("agent", "The team plan is forty dollars per seat each month.", 2500, 5000),
+        Line("customer", "Is your product SOC 2 certified?", 6000, 8000),
+        Line("agent", "Great question. Let me tell you about our new dashboard.", 8500, 11000),
+    )
+    report = score_content(lines, llm=make_llm_client(_settings(provider)))
+    categories = {f.details["customer_quote"].lower(): f.category for f in report.findings}
+    soc = next(c for q, c in categories.items() if "soc" in q)
+    price = next(c for q, c in categories.items() if "plan" in q)
+    assert soc in ("dodged", "weak")
+    assert price in ("handled", "weak")
+    assert 0 <= report.score <= 100

@@ -11,10 +11,12 @@ from functools import lru_cache
 
 from ai.config import AISettings, get_ai_settings
 from ai.core.llm import LLMClient, LLMError
+from ai.diarize.base import DiarizeClient, DiarizeError
 from ai.transcribe.base import TranscribeClient, TranscribeError
 
 LLM_PROVIDERS = ("groq", "gemini")
 TRANSCRIBE_PROVIDERS = ("groq", "local")
+DIARIZE_PROVIDERS = ("pyannote",)
 
 
 def make_llm_client(settings: AISettings) -> LLMClient:
@@ -53,6 +55,17 @@ def make_transcribe_client(settings: AISettings) -> TranscribeClient:
     )
 
 
+def make_diarize_client(settings: AISettings) -> DiarizeClient:
+    provider = settings.diarize_provider.strip().lower()
+    if provider == "pyannote":
+        from .pyannote.diarizer import PyannoteDiarizer
+
+        return PyannoteDiarizer(settings.hf_token.get_secret_value())
+    raise DiarizeError(
+        f"Unknown DIARIZE_PROVIDER {provider!r}. Use one of: {', '.join(DIARIZE_PROVIDERS)}"
+    )
+
+
 @lru_cache(maxsize=1)
 def get_llm_client() -> LLMClient:
     """The process-wide LLM client chosen by LLM_PROVIDER (default groq)."""
@@ -65,9 +78,18 @@ def get_transcribe_client() -> TranscribeClient:
     return make_transcribe_client(get_ai_settings())
 
 
+@lru_cache(maxsize=1)
+def get_diarize_client() -> DiarizeClient:
+    """The process-wide diarizer chosen by DIARIZE_PROVIDER (default pyannote).
+    Loading it reads the models, so it is created on first use only."""
+    return make_diarize_client(get_ai_settings())
+
+
 __all__ = [
+    "get_diarize_client",
     "get_llm_client",
     "get_transcribe_client",
+    "make_diarize_client",
     "make_llm_client",
     "make_transcribe_client",
 ]
