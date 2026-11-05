@@ -209,8 +209,9 @@ notes and tables are read too.
 For one recording with two voices on it. Needs the `diarize` extra
 (pyannote and torch, a large download) and `HF_TOKEN`, a Hugging Face
 read token whose account accepted the licences of
-`pyannote/speaker-diarization-3.1`, `pyannote/segmentation-3.0` and
-`pyannote/embedding`.
+`pyannote/speaker-diarization-3.1` and `pyannote/segmentation-3.0`. Voice
+matching uses the WeSpeaker model from the same pipeline, which needs no
+other licence.
 
 ```python
 import os

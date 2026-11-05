@@ -72,10 +72,23 @@ def test_pyannote_embedder_uses_the_whole_window_inference():
 
     inference.crop = lambda path, span: calls.append(("crop", path, span.start, span.end)) or [3.0]
     pytest.importorskip("pyannote.core", reason="needs the diarize extra")
-    embedder = PyannoteEmbedder(inference=inference)
+
+    class Audio:
+        def get_duration(self, path):
+            calls.append(("duration", path))
+            return 35.012
+
+    embedder = PyannoteEmbedder(inference=inference, audio=Audio())
     assert embedder.embed_file("a.wav").tolist() == [1.0, 2.0]
     assert embedder.embed_span("a.wav", 1500, 3000).tolist() == [3.0]
-    assert calls == [("file", "a.wav"), ("crop", "a.wav", 1.5, 3.0)]
+    # A segment rounded past the end of the file is clamped to it.
+    embedder.embed_span("a.wav", 30000, 35063)
+    assert calls == [
+        ("file", "a.wav"),
+        ("duration", "a.wav"),  # read once, then cached
+        ("crop", "a.wav", 1.5, 3.0),
+        ("crop", "a.wav", 30.0, 35.012),
+    ]
 
 
 def test_pyannote_embedder_needs_a_token():
