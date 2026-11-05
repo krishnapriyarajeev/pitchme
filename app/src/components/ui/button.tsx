@@ -41,7 +41,11 @@ export function Button({
   const look = {
     primary: { surface: { backgroundColor: theme.accent }, ink: theme.onAccent },
     secondary: {
-      surface: { backgroundColor: theme.surface, borderWidth: 1.5, borderColor: theme.borderStrong },
+      surface: {
+        backgroundColor: theme.surface,
+        borderWidth: 1.5,
+        borderColor: theme.borderStrong,
+      },
       ink: theme.text,
     },
     quiet: { surface: { backgroundColor: theme.surfaceAlt }, ink: theme.accent },

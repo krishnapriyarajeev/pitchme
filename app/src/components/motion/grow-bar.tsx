@@ -43,7 +43,9 @@ export function GrowBar({ value, color, trackColor, height = 5, delay = 0, style
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max: 100, now: Math.round(target) }}
       style={[styles.track, { height, backgroundColor: trackColor }, style]}>
-      <Animated.View style={[StyleSheet.absoluteFill, styles.fill, { backgroundColor: color }, fill]} />
+      <Animated.View
+        style={[StyleSheet.absoluteFill, styles.fill, { backgroundColor: color }, fill]}
+      />
     </View>
   );
 }

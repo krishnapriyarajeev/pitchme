@@ -113,7 +113,10 @@ export function Icon({ name, size = 22, color, strokeWidth = 1.7 }: Props) {
       )}
       {(name === 'eye' || name === 'eye-off') && (
         <>
-          <Path d="M2.4 12S6.5 5.2 12 5.2 21.6 12 21.6 12 17.5 18.8 12 18.8 2.4 12 2.4 12Z" {...s} />
+          <Path
+            d="M2.4 12S6.5 5.2 12 5.2 21.6 12 21.6 12 17.5 18.8 12 18.8 2.4 12 2.4 12Z"
+            {...s}
+          />
           <Circle cx="12" cy="12" r="3.1" {...s} />
           {name === 'eye-off' && <Path d="M4 4l16 16" {...s} />}
         </>
