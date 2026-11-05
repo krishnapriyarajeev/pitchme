@@ -14,6 +14,7 @@ from ai.vision.report import (
     thresholds_for,
 )
 
+from .conftest import needs_models
 from .fakes import FROWN, SMILE, FakeDetector, detection, frames, timeline
 from .video import make_video, needs_ffmpeg
 
@@ -181,3 +182,10 @@ def test_score_vision_from_a_path_and_from_storage(tmp_path):
     stored = score_vision("users/1/talk.mp4", Store(), mode="qa", detector=FakeDetector())
     assert stored.mode == "qa"
     assert len(stored.frames) == 2
+
+
+@needs_ffmpeg
+@needs_models
+def test_real_models_find_no_person_in_a_test_pattern(tmp_path):
+    report = score_vision(make_video(tmp_path / "pattern.mp4", seconds=2, size="320x240"))
+    assert _categories(report) == ["no_person"]
