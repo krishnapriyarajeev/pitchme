@@ -7,6 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 UploadKind = Literal["voice", "playbook"]
+CloneStatus = Literal["pending", "ready", "failed"]
 
 
 class ProfileResponse(BaseModel):
@@ -18,6 +19,9 @@ class ProfileResponse(BaseModel):
     has_voice_sample: bool
     voice_sample_url: str | None
     voice_clone_id: str | None
+    # None until a voice sample is uploaded.
+    voice_clone_status: CloneStatus | None = None
+    voice_clone_error: str | None = None
     has_playbook: bool
     playbook_url: str | None
     created_at: datetime
@@ -52,3 +56,9 @@ class UploadConfirmResponse(BaseModel):
     object_key: str
     url: str
     voice_clone_id: str | None = None
+    voice_clone_status: CloneStatus | None = None
+
+
+class VoiceCloneResponse(BaseModel):
+    status: CloneStatus | None
+    error: str | None = None

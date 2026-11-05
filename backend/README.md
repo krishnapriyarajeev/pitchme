@@ -45,11 +45,17 @@ Interactive docs at `/docs`. Use **Authorize** with your email and password.
 | GET | `/api/profile` | bearer | Profile with short-lived links to the voice sample and playbook |
 | PUT | `/api/profile` | bearer | Change only the fields sent |
 | POST | `/api/profile/upload-url` | bearer | Presigned PUT for `voice` or `playbook` |
-| POST | `/api/profile/upload-confirm` | bearer | Check the upload and save it to the profile |
+| POST | `/api/profile/upload-confirm` | bearer | Check the upload and save it to the profile; a voice sample also starts cloning the voice |
+| POST | `/api/profile/voice-clone` | bearer | Clone the voice again from the current sample (202) |
 
 Uploads go straight to storage: ask for an upload URL, PUT the file to it, then
 confirm. Confirm checks that the key belongs to you, that the file is there and
 that it fits the size limit (voice 20 MB, playbook 25 MB).
+
+Cloning runs in the background after a voice sample is confirmed. The
+profile's `voice_clone_status` goes from `pending` to `ready` (with
+`voice_clone_id`) or `failed` (with a plain `voice_clone_error`). A new
+sample replaces the old clone, which is deleted from the provider.
 
 Errors are JSON with a stable `code`, for example
 `{"detail": "An account with this email already exists.", "code": "email_taken"}`.
@@ -69,7 +75,7 @@ make revision m="add some column" # autogenerate a migration from model changes
 
 | Table | Holds |
 |---|---|
-| `users` | Login, profile, voice sample and playbook keys, voice clone id |
+| `users` | Login, profile, voice sample and playbook keys, voice clone id and status |
 | `practice_sessions` | Deal details, call status, transcript, recording key, analysis job state and result |
 
 ## Storage

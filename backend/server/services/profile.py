@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from server.db import User
+from server.db import User, VoiceCloneStatus
 from server.errors import Forbidden, InvalidUpload, StorageUnavailable
 from server.schemas.profile import (
     ProfileResponse,
@@ -29,6 +29,8 @@ def to_response(user: User, storage: Storage) -> ProfileResponse:
         if user.voice_sample_key
         else None,
         voice_clone_id=user.voice_clone_id,
+        voice_clone_status=user.voice_clone_status,
+        voice_clone_error=user.voice_clone_error,
         has_playbook=user.playbook_key is not None,
         playbook_url=storage.presign_download(user.playbook_key) if user.playbook_key else None,
         created_at=user.created_at,
@@ -101,9 +103,11 @@ def confirm_upload(
     previous = getattr(user, field)
     setattr(user, field, key)
     if kind == "voice":
-        # A new sample means the old clone no longer matches; it is rebuilt
-        # from the new sample once voice cloning is wired in.
+        # A new sample means the old clone no longer matches. The route
+        # starts a background clone from the new one.
         user.voice_clone_id = None
+        user.voice_clone_status = VoiceCloneStatus.pending
+        user.voice_clone_error = None
         user.voice_transcript = None
     db.commit()
 
@@ -116,4 +120,5 @@ def confirm_upload(
         object_key=key,
         url=storage.presign_download(key),
         voice_clone_id=user.voice_clone_id,
+        voice_clone_status=user.voice_clone_status,
     )
