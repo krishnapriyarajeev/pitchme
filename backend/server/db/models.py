@@ -94,13 +94,22 @@ class PracticeSession(TimestampMixin, Base):
     deal_stage: Mapped[str]
     buyer_composure: Mapped[str | None]
     competitors: Mapped[str | None]
+    # The buyer's role: ceo, cto, procurement and so on.
+    audience_type: Mapped[str | None]
 
-    # Filled when the call ends. Transcript is a list of {"role", "text"} turns.
-    transcript: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
+    # Set when the recording started; both stay empty if it could not.
+    egress_id: Mapped[str | None]
     recording_key: Mapped[str | None]
+
+    # Filled when the call ends. Transcript turns are {"role": "seller" or
+    # "buyer", "text", "start_ms", "end_ms", "interrupted"}, timed from when
+    # the seller joined.
+    transcript: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
     duration_seconds: Mapped[float | None] = mapped_column(Numeric(9, 2))
     started_at: Mapped[datetime | None]
     ended_at: Mapped[datetime | None]
+    # seller_left, time_limit, no_show or error.
+    end_reason: Mapped[str | None]
 
     # Analysis job state lives in its own columns so a crash or restart can be
     # detected and retried; analysis_data holds only the finished result.

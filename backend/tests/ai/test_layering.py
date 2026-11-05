@@ -41,6 +41,7 @@ LIGHT_PACKAGES = [
     "ai.content",
     "ai.core",
     "ai.diarize",
+    "ai.rehearsal",
     "ai.providers",
     "ai.speech",
     "ai.transcribe",

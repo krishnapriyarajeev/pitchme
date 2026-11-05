@@ -24,8 +24,13 @@ and `LIVEKIT_API_SECRET` (32+ characters).
 ```bash
 make up         # Postgres, MinIO, Redis, LiveKit, Egress
 make run        # API on :8000 with reload (API_PORT=8001 make run to change)
+make agent      # the LiveKit worker that plays the AI buyer
 make practice   # everything above, with URLs set for a phone on your LAN
 ```
+
+Call recordings need `LAN_IP` set when LiveKit starts. Egress records from
+inside Docker and cannot reach LiveKit's media ports on `127.0.0.1`.
+`make practice` sets it for you.
 
 | Service | URL |
 |---|---|
@@ -47,6 +52,11 @@ Interactive docs at `/docs`. Use **Authorize** with your email and password.
 | POST | `/api/profile/upload-url` | bearer | Presigned PUT for `voice` or `playbook` |
 | POST | `/api/profile/upload-confirm` | bearer | Check the upload and save it to the profile; a voice sample also starts cloning the voice |
 | POST | `/api/profile/voice-clone` | bearer | Clone the voice again from the current sample (202) |
+| POST | `/api/sessions` | bearer | Start a call with the AI buyer: room, recording and a join token (201) |
+| GET | `/api/sessions` | bearer | Your sessions, newest first (`limit`, `offset`) |
+| GET | `/api/sessions/{id}` | bearer | One session with its timed transcript and recording link |
+| POST | `/internal/sessions/{id}/started` | internal key | The worker reports that the seller joined |
+| POST | `/internal/sessions/{id}/results` | internal key | The worker reports the transcript and how the call ended |
 
 Uploads go straight to storage: ask for an upload URL, PUT the file to it, then
 confirm. Confirm checks that the key belongs to you, that the file is there and
@@ -56,6 +66,14 @@ Cloning runs in the background after a voice sample is confirmed. The
 profile's `voice_clone_status` goes from `pending` to `ready` (with
 `voice_clone_id`) or `failed` (with a plain `voice_clone_error`). A new
 sample replaces the old clone, which is deleted from the provider.
+
+A session goes `waiting` (room made) to `active` (the seller joined) to
+`complete` or `failed`. `end_reason` says why it ended: `seller_left`,
+`time_limit` (after `REHEARSAL_MAX_MINUTES`), `no_show` (nobody joined
+within two minutes) or `error`. Deal choices accept the app's labels, such
+as "Cold call" or "VP Sales", and are stored as keys (`cold_call`,
+`vp_sales`). The recording link appears once egress has uploaded the file,
+a few seconds after the call ends.
 
 Errors are JSON with a stable `code`, for example
 `{"detail": "An account with this email already exists.", "code": "email_taken"}`.
@@ -76,7 +94,7 @@ make revision m="add some column" # autogenerate a migration from model changes
 | Table | Holds |
 |---|---|
 | `users` | Login, profile, voice sample and playbook keys, voice clone id and status |
-| `practice_sessions` | Deal details, call status, transcript, recording key, analysis job state and result |
+| `practice_sessions` | Deal details and buyer role, call status and end reason, timed transcript, recording key and egress id, analysis job state and result |
 
 ## Storage
 
@@ -100,6 +118,8 @@ test or the LiveKit worker can call it directly.
 | `ai/vision` | Posture, eye contact, expression and gestures from video, and the annotated video |
 | `ai/content` | Playbook extraction and the content judge (how each buyer question was answered) |
 | `ai/diarize` | Who spoke when, which voice is the user, and cutting a recording to one speaker |
+| `ai/voice_cloning` | Cloning the user's voice and speaking stronger answers in it |
+| `ai/rehearsal` | The live call: buyer personas, the LiveKit agent worker and its reports to the API |
 | `ai/utils` | `extract_audio` (ffmpeg to 16 kHz mono WAV), `local_media` (path or storage key to a local file) |
 | `ai/config.py` | Provider settings, read from the same `.env` |
 
@@ -262,6 +282,36 @@ clips = speak_answers(fixes, user.voice_clone_id)  # one WAV per stronger answer
   applies emotion and speed only on `sonic-3` and later. Resemble also
   needs a transcript of the sample and a consent recording URL.
 
+### Live call
+
+The API creates a LiveKit room for each session and puts the deal in the
+room metadata. The worker (`make agent`) joins only those rooms and plays
+the buyer: Deepgram hears the seller and speaks for the buyer, Groq
+(`GROQ_MODEL`) thinks, and Silero detects speech. The buyer speaks first,
+with an opening that fits the deal stage.
+
+- Personas combine the buyer's role (general, CEO, CTO, VP Sales,
+  procurement, product manager, investor), the deal stage (cold call,
+  discovery, demo, proposal, negotiation, closing, renewal) and the
+  composure (warm, direct, analytical, guarded).
+- Each transcript turn is timed in milliseconds from when the seller
+  joined, and marks interruptions.
+- When the call ends, the worker reports to the API with `AI_CALLBACK_KEY`
+  and deletes the room, which stops the recording at once.
+
+```bash
+uv run --extra rehearsal python scripts/run_agent.py console   # talk to the buyer on this machine
+```
+
+| Setting | What it does | Default |
+|---|---|---|
+| `DEEPGRAM_API_KEY` | Speech to text and text to speech for the buyer | none |
+| `DEEPGRAM_STT_MODEL` / `DEEPGRAM_TTS_VOICE` | Deepgram models | `nova-3` / `aura-2-andromeda-en` |
+| `REHEARSAL_MAX_MINUTES` | The buyer says goodbye and ends the call | `20` |
+| `AGENT_PORT` | Worker health check port (8081 is Expo's) | `8082` |
+| `AGENT_IDLE_PROCESSES` | Warm job processes | `2` |
+| `EGRESS_S3_ENDPOINT` | Storage for recordings, as egress sees it; empty uses the egress config | empty |
+
 ## Checks
 
 ```bash
@@ -269,12 +319,13 @@ make test   # unit tests, no services needed
 make lint   # ruff format + lint
 make check  # what CI runs
 make test-all  # starts services, then runs integration tests too
-make test-live # real Groq and Gemini calls with the keys in .env (spends quota)
+make test-live # real provider calls with the keys in .env (spends quota)
 ```
 
 Integration tests create a throwaway database and bucket, and skip when
-Postgres or MinIO is not running.
+Postgres or MinIO is not running. The LiveKit tests also skip when LiveKit
+is not running; the recording test runs with `make test-live`.
 
-Optional dependencies are split by area (`api`, `llm`, `voice`, `vision`, `content`, `diarize`, `voice-clone`, `whisper-local`) so a
+Optional dependencies are split by area (`api`, `llm`, `voice`, `vision`, `content`, `diarize`, `voice-clone`, `rehearsal`, `whisper-local`) so a
 change to one part does not pull in heavy libraries from another. `uv sync --all-extras`
 installs all of them.

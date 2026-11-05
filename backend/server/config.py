@@ -56,7 +56,12 @@ class Settings(BaseSettings):
     livekit_public_url: str = ""
     livekit_api_key: str = "devkey"
     livekit_api_secret: SecretStr = SecretStr("")
-    egress_s3_endpoint: str = "http://host.docker.internal:9000"
+    # Empty: egress uploads with the storage in its own config, which
+    # docker-compose points at MinIO. host.docker.internal, the old default,
+    # does not resolve on Linux.
+    egress_s3_endpoint: str = ""
+    # How long the app has to join with its token.
+    livekit_token_ttl_minutes: int = 10
 
     @field_validator("cors_origins", mode="before")
     @classmethod
