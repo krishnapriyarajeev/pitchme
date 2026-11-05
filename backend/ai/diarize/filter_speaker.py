@@ -69,6 +69,17 @@ def _shift(t_ms: int, ranges: list[tuple[int, int]]) -> int | None:
     return None
 
 
+def original_time(t_ms: int, ranges: list[tuple[int, int]]) -> int:
+    """The reverse of closing up: where a time in the cut audio was in the
+    original. Findings from the cut audio use it to point at the recording."""
+    offset = 0
+    for start, end in ranges:
+        if t_ms <= offset + end - start:
+            return start + t_ms - offset
+        offset += end - start
+    return ranges[-1][1] if ranges else t_ms
+
+
 def filter_transcript(
     tagged: TaggedTranscript, speaker: str, segments: tuple[DiarizedSegment, ...]
 ) -> Transcript:
