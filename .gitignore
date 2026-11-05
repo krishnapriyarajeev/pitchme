@@ -9,6 +9,9 @@ Thumbs.db
 .idea/
 *.swp
 
+# Downloaded models (scripts/download_models.sh)
+backend/ai/models/*.task
+
 # Python
 __pycache__/
 *.py[cod]
