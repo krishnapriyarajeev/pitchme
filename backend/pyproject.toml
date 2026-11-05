@@ -38,6 +38,13 @@ voice = [
     "numpy>=1.26",
     "praat-parselmouth>=0.4.5",
 ]
+# Body and face landmarks for the vision pipeline. mediapipe brings its
+# own OpenCV build. The model files are downloaded separately with
+# scripts/download_models.sh.
+vision = [
+    "numpy>=1.26",
+    "mediapipe>=0.10.20",
+]
 # Offline transcription with faster-whisper. Large download; only needed
 # when TRANSCRIBE_PROVIDER=local.
 whisper-local = [

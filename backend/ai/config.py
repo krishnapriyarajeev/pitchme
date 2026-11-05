@@ -36,6 +36,10 @@ class AISettings(BaseSettings):
     # auto, cpu or cuda. Used only by the local provider.
     whisper_device: str = "auto"
 
+    # ---- Vision ----
+    # Folder with the MediaPipe .task models; empty means ai/models.
+    vision_models_dir: str = ""
+
 
 @lru_cache
 def get_ai_settings() -> AISettings:
