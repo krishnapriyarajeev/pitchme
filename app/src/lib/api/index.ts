@@ -11,3 +11,11 @@ export {
 } from '@/lib/api/sessions';
 export type { LocalFile } from '@/lib/api/upload';
 export type * from '@/lib/api/types';
+export type {
+  Metrics,
+  SpeechMetrics,
+  TimeWindow,
+  VisionMetrics,
+  VoiceMetrics,
+} from '@/lib/api/metrics';
+export { readMetrics } from '@/lib/api/metrics';
