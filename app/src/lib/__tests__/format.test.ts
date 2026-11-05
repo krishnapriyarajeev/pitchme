@@ -7,6 +7,7 @@ import {
   formatMoment,
   formatRelativeDay,
   formatShortDate,
+  initialsOf,
 } from '@/lib/format';
 
 describe('formatDuration', () => {
@@ -79,5 +80,14 @@ describe('dealTitle', () => {
   it('joins the prospect and company', () => {
     expect(dealTitle('Jo Bennett', 'Saber Industries')).toBe('Jo Bennett · Saber Industries');
     expect(dealTitle('Jo Bennett', ' ')).toBe('Jo Bennett');
+  });
+});
+
+describe('initialsOf', () => {
+  it('takes the first and last name', () => {
+    expect(initialsOf('jo anne bennett')).toBe('JB');
+    expect(initialsOf('Cher')).toBe('C');
+    expect(initialsOf('  ')).toBe('');
+    expect(initialsOf(null)).toBe('');
   });
 });

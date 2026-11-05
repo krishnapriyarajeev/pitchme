@@ -62,6 +62,31 @@ runs in a development build: a build of this app with the Expo dev client.
 
 The web build (`npm run web`) shows the screens, but it has no live call.
 
+## Screens and sign-in
+
+| Route                             | Who sees it       | What it is                              |
+| --------------------------------- | ----------------- | --------------------------------------- |
+| `/`                               | signed out        | Landing                                 |
+| `/login`                          | signed out        | Sign in                                 |
+| `/onboard`                        | signed out        | Step 1: about you, and the account      |
+| `/onboard/voice`                  | during onboarding | Step 2: voice sample                    |
+| `/onboard/playbook`               | during onboarding | Step 3: playbook upload                 |
+| `/home`, `/playbook`, `/profile`  | signed in         | The tabs                                |
+| `/profile/edit`, `/profile/voice` | signed in         | Edit details, record a new voice sample |
+
+`AuthProvider` (`src/hooks/use-auth.tsx`) holds the sign-in state, and the
+root layout shows screens by it with `Stack.Protected`. Screens do not
+navigate after sign-in or sign-out: the state changes, and the layout moves
+the user to the first screen they may see.
+
+- **Auto login:** a saved token is checked once at launch, behind the splash
+  screen. Only a rejected token signs the user out. With no network, the
+  token is kept and each screen offers to try again.
+- **401:** when the API rejects the token later, the client clears it and
+  the user lands on sign-in with the reason.
+- **Onboarding:** sign-up opens steps 2 and 3. Both can be skipped, and both
+  can be done later from Profile and the Playbook tab.
+
 ## API client
 
 `src/lib/api` follows the API schemas in `backend/server/schemas`. Keep the
