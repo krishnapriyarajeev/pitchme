@@ -85,6 +85,7 @@ function RootStack() {
           <Stack.Screen name="profile/voice" />
           <Stack.Screen name="sessions" />
           <Stack.Screen name="session/[id]" />
+          <Stack.Screen name="debrief/[id]" />
           <Stack.Screen name="prepare" options={{ animation: 'slide_from_bottom' }} />
           {/* The call is a room you enter, not a page: no swipe back out of it. */}
           <Stack.Screen
