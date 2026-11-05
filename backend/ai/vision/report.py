@@ -35,8 +35,9 @@ MIN_HAND_VISIBLE_SHARE = 0.3
 MIN_HAND_PAIRS = 5
 # Typical hand speed below this (shoulder widths a second) is static.
 STATIC_HAND_SPEED = 0.05
-# A hand move larger than this between two samples counts as a gesture.
-GESTURE_MIN_MOVE = 0.15
+# A hand move of at least this many shoulder widths between two samples is
+# part of a gesture. Moves in a row are one gesture, so a wave counts once.
+GESTURE_MIN_MOVE = 0.3
 
 
 @dataclass(frozen=True)
@@ -203,6 +204,12 @@ def aggregate_emotion(frames: Sequence[FrameAnalysis]) -> EmotionAnalysis:
     )
 
 
+def _onsets(moves: Sequence[float]) -> int:
+    """Number of runs of moves at or above GESTURE_MIN_MOVE."""
+    big = [m >= GESTURE_MIN_MOVE for m in moves]
+    return sum(1 for i, b in enumerate(big) if b and (i == 0 or not big[i - 1]))
+
+
 def aggregate_movement(
     frames: Sequence[FrameAnalysis], thresholds: VisionThresholds
 ) -> MovementAnalysis:
@@ -240,7 +247,7 @@ def aggregate_movement(
         movement_level=level,
         hand_visible_pct=round(visible, 3),
         hand_speed=round(speed, 3),
-        gestures_per_min=round(sum(m > GESTURE_MIN_MOVE for m in moves) / seen_minutes, 1),
+        gestures_per_min=round(_onsets(moves) / seen_minutes, 1),
     )
 
 

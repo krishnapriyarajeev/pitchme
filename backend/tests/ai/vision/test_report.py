@@ -91,7 +91,17 @@ def test_waving_hands_are_excessive_in_presentation_but_not_qa():
     assert aggregate_movement(moving, PRESETS["qa"]).movement_level == "normal"
     result = aggregate_movement(moving, PRESENTATION)
     assert result.hand_speed == pytest.approx(1.2)
-    assert result.gestures_per_min == 120.0
+    # One long wave is one gesture: 1 in 9.5 s of hand time.
+    assert result.gestures_per_min == 6.3
+
+
+def test_gestures_count_each_burst_of_movement_once():
+    def bursts(i):  # out, further out and back in one go, then still
+        return detection(wrist=(0.3 + {1: 0.12, 2: 0.24}.get(i % 5, 0.0), 0.8))
+
+    result = aggregate_movement(timeline(21, bursts), PRESENTATION)
+    # Bursts start at samples 1, 6, 11 and 16: 4 gestures in 10 s.
+    assert result.gestures_per_min == 24.0
 
 
 def test_hands_out_of_view_are_not_judged():
