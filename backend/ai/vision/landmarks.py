@@ -54,7 +54,7 @@ FACE_POINTS = {
 
 
 class VisionModelError(RuntimeError):
-    """A model file is missing or mediapipe is not installed."""
+    """A model file is missing, or mediapipe or a library it needs is not installed."""
 
 
 @dataclass(frozen=True)
@@ -128,13 +128,21 @@ class MediaPipeDetector:
 
         self._mp = mp
         image_mode = vision.RunningMode.IMAGE
-        self._pose = vision.PoseLandmarker.create_from_options(
-            vision.PoseLandmarkerOptions(
-                base_options=BaseOptions(model_asset_path=str(pose_path)),
-                running_mode=image_mode,
-                num_poses=1,
+        try:
+            self._pose = vision.PoseLandmarker.create_from_options(
+                vision.PoseLandmarkerOptions(
+                    base_options=BaseOptions(model_asset_path=str(pose_path)),
+                    running_mode=image_mode,
+                    num_poses=1,
+                )
             )
-        )
+        except OSError as exc:
+            # mediapipe loads its native library on first use, and that
+            # library needs the system EGL and GLES libraries.
+            raise VisionModelError(
+                f"mediapipe could not load its native library ({exc}). "
+                "On Debian or Ubuntu run: apt-get install libegl1 libgles2"
+            ) from exc
         self._face = vision.FaceLandmarker.create_from_options(
             vision.FaceLandmarkerOptions(
                 base_options=BaseOptions(model_asset_path=str(face_path)),

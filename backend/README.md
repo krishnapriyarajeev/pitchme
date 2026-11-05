@@ -152,6 +152,10 @@ first. Only patterns a listener would notice become findings.
 make models   # MediaPipe pose and face models into ai/models (not committed)
 ```
 
+mediapipe also needs the system EGL and GLES libraries. They are usually
+present on a desktop; on a Debian or Ubuntu server run
+`apt-get install libegl1 libgles2`.
+
 ```python
 from ai.vision import render_annotated_video, score_vision, voice_timeline
 

@@ -72,3 +72,15 @@ def test_real_models_find_nothing_in_a_blank_frame():
         detector.close()
     assert found.pose == {}
     assert found.face == {}
+
+
+@needs_models
+def test_missing_system_library_names_the_package(monkeypatch):
+    from mediapipe.tasks.python import vision
+
+    def fail(_options):
+        raise OSError("libEGL.so.1: cannot open shared object file")
+
+    monkeypatch.setattr(vision.PoseLandmarker, "create_from_options", fail)
+    with pytest.raises(VisionModelError, match="apt-get install libegl1 libgles2"):
+        MediaPipeDetector()
