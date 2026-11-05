@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Breathe } from '@/components/motion/breathe';
 import { Rise } from '@/components/motion/rise';
+import { ReadinessCard } from '@/components/readiness-card';
 import { SessionRow } from '@/components/session-row';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Icon } from '@/components/ui/icon';
@@ -13,6 +14,7 @@ import { useRefreshOnFocus } from '@/hooks/use-refresh-on-focus';
 import { useRequest } from '@/hooks/use-request';
 import { useTheme } from '@/hooks/use-theme';
 import { listSessions, messageOf } from '@/lib/api';
+import { progressFrom } from '@/lib/progress';
 import { isSettling, rehearsalState } from '@/lib/sessions';
 
 const RECENT = 5;
@@ -29,6 +31,8 @@ export default function HomeTab() {
   });
   useRefreshOnFocus(recent.reload);
   const items = recent.data ?? [];
+  // The latest score; Progress reads the full history.
+  const progress = progressFrom(items);
 
   return (
     <Screen scroll edges={['top']} contentStyle={styles.content}>
@@ -63,6 +67,12 @@ export default function HomeTab() {
           </Pressable>
         </Breathe>
       </Rise>
+
+      {progress.latest ? (
+        <Rise index={2} style={styles.readiness}>
+          <ReadinessCard progress={progress} onPress={() => router.push('/progress')} />
+        </Rise>
+      ) : null}
 
       <Rise index={2} style={styles.sectionHead}>
         <Text variant="rowTitle" accessibilityRole="header">
@@ -140,6 +150,7 @@ const styles = StyleSheet.create({
   ctaText: { flex: 1, minWidth: 0 },
   ctaTitle: { fontSize: 19, lineHeight: 24 },
   ctaDetail: { marginTop: 2, opacity: 0.75 },
+  readiness: { marginTop: 12 },
   sectionHead: {
     marginTop: 26,
     flexDirection: 'row',
