@@ -36,6 +36,11 @@ class AISettings(BaseSettings):
     # auto, cpu or cuda. Used only by the local provider.
     whisper_device: str = "auto"
 
+    # ---- Diarization ----
+    diarize_provider: str = "pyannote"
+    # Read token for the gated pyannote models on Hugging Face.
+    hf_token: SecretStr = SecretStr("")
+
     # ---- Vision ----
     # Folder with the MediaPipe .task models; empty means ai/models.
     vision_models_dir: str = ""

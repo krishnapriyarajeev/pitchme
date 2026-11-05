@@ -45,6 +45,17 @@ vision = [
     "numpy>=1.26",
     "mediapipe>=0.10.20",
 ]
+# Reading playbooks for the content judge: PDF, PowerPoint and Word.
+content = [
+    "pypdf>=5.0",
+    "python-pptx>=1.0",
+    "python-docx>=1.1",
+]
+# Speaker diarization and voice matching with pyannote. Pulls in torch (a
+# large download); only needed for recordings with two voices on one track.
+diarize = [
+    "pyannote.audio>=3.3",
+]
 # Offline transcription with faster-whisper. Large download; only needed
 # when TRANSCRIBE_PROVIDER=local.
 whisper-local = [
