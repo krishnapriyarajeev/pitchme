@@ -1,7 +1,11 @@
 """The AI layer must stay usable without the API, so it never imports server."""
 
 import ast
+import subprocess
+import sys
 from pathlib import Path
+
+import pytest
 
 import ai
 
@@ -30,3 +34,25 @@ def test_ai_does_not_import_server():
 
 def test_check_sees_the_whole_package():
     assert len(list(AI_ROOT.rglob("*.py"))) >= 10
+
+
+# Packages whose imports need only the base install plus the llm extra.
+LIGHT_PACKAGES = [
+    "ai.content",
+    "ai.core",
+    "ai.diarize",
+    "ai.providers",
+    "ai.speech",
+    "ai.transcribe",
+    "ai.voice_cloning",
+]
+
+
+@pytest.mark.parametrize("package", LIGHT_PACKAGES)
+def test_each_package_imports_on_its_own(package):
+    """In a fresh interpreter, so a circular import cannot hide behind the
+    order other tests happened to import things in."""
+    result = subprocess.run(
+        [sys.executable, "-c", f"import {package}"], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr.strip().splitlines()[-1]

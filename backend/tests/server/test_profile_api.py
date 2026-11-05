@@ -58,11 +58,14 @@ def test_voice_upload_flow(signed_in):
         "/api/profile/upload-confirm", json={"kind": "voice", "object_key": body["object_key"]}
     )
     assert confirm.status_code == 200
+    assert confirm.json()["voice_clone_status"] == "pending"
     assert httpx.get(confirm.json()["url"]).content == b"fake-m4a-audio"
 
     profile = signed_in.get("/api/profile").json()
     assert profile["has_voice_sample"] is True
     assert profile["voice_sample_url"]
+    # These bytes are not audio, so the background clone fails cleanly.
+    assert profile["voice_clone_status"] == "failed"
 
 
 def test_reupload_with_new_extension_removes_old_file(signed_in, storage):

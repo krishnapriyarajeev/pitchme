@@ -55,7 +55,7 @@ jobs:
       # ffmpeg for audio and video; EGL and GLES for mediapipe's native library.
       - name: Install system libraries
         run: sudo apt-get update && sudo apt-get install -y ffmpeg libegl1 libgles2
-      - run: uv sync --extra api --extra llm --extra voice --extra vision --extra content --group dev
+      - run: uv sync --extra api --extra llm --extra voice --extra vision --extra content --extra voice-clone --group dev
       - name: Cache MediaPipe models
         uses: actions/cache@v4
         with:

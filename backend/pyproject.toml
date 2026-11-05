@@ -56,6 +56,11 @@ content = [
 diarize = [
     "pyannote.audio>=3.3",
 ]
+# Voice cloning and speech in the user's own voice (Cartesia, Resemble).
+voice-clone = [
+    "cartesia>=2.0",
+    "resemble>=1.6",
+]
 # Offline transcription with faster-whisper. Large download; only needed
 # when TRANSCRIBE_PROVIDER=local.
 whisper-local = [

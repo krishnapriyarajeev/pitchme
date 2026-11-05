@@ -36,10 +36,20 @@ def db_sessionmaker(db_engine):
 
 
 @pytest.fixture
-def api(db_sessionmaker, storage, monkeypatch) -> TestClient:
+def voice_client():
+    """The voice provider every API test clones with; never a real one."""
+    from tests.ai.voice_cloning.fakes import FakeVoiceClient
+
+    return FakeVoiceClient()
+
+
+@pytest.fixture
+def api(db_sessionmaker, storage, voice_client, monkeypatch) -> TestClient:
     from server.config import Settings, get_settings
     from server.db.session import get_db
+    from server.deps.voice_clone import get_voice_cloner
     from server.main import create_app
+    from server.services.voice_clone import VoiceCloner
     from server.storage import get_storage
 
     settings = Settings(log_dir="", jwt_secret="test-jwt-secret-" + "z" * 32)
@@ -56,6 +66,9 @@ def api(db_sessionmaker, storage, monkeypatch) -> TestClient:
     app = create_app(settings)
     app.dependency_overrides[get_db] = _db
     app.dependency_overrides[get_storage] = lambda: storage
+    app.dependency_overrides[get_voice_cloner] = lambda: VoiceCloner(
+        db_sessionmaker, storage, client_factory=lambda: voice_client
+    )
     return TestClient(app)
 
 

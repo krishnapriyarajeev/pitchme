@@ -45,11 +45,17 @@ Interactive docs at `/docs`. Use **Authorize** with your email and password.
 | GET | `/api/profile` | bearer | Profile with short-lived links to the voice sample and playbook |
 | PUT | `/api/profile` | bearer | Change only the fields sent |
 | POST | `/api/profile/upload-url` | bearer | Presigned PUT for `voice` or `playbook` |
-| POST | `/api/profile/upload-confirm` | bearer | Check the upload and save it to the profile |
+| POST | `/api/profile/upload-confirm` | bearer | Check the upload and save it to the profile; a voice sample also starts cloning the voice |
+| POST | `/api/profile/voice-clone` | bearer | Clone the voice again from the current sample (202) |
 
 Uploads go straight to storage: ask for an upload URL, PUT the file to it, then
 confirm. Confirm checks that the key belongs to you, that the file is there and
 that it fits the size limit (voice 20 MB, playbook 25 MB).
+
+Cloning runs in the background after a voice sample is confirmed. The
+profile's `voice_clone_status` goes from `pending` to `ready` (with
+`voice_clone_id`) or `failed` (with a plain `voice_clone_error`). A new
+sample replaces the old clone, which is deleted from the provider.
 
 Errors are JSON with a stable `code`, for example
 `{"detail": "An account with this email already exists.", "code": "email_taken"}`.
@@ -69,7 +75,7 @@ make revision m="add some column" # autogenerate a migration from model changes
 
 | Table | Holds |
 |---|---|
-| `users` | Login, profile, voice sample and playbook keys, voice clone id |
+| `users` | Login, profile, voice sample and playbook keys, voice clone id and status |
 | `practice_sessions` | Deal details, call status, transcript, recording key, analysis job state and result |
 
 ## Storage
@@ -233,6 +239,29 @@ Cutting to one speaker closes up the gaps, so the buyer's turns do not
 read as long hesitations by the user. `lines_from_turns(tagged.turns(),
 user.speaker)` gives the content judge its lines.
 
+### Voice cloning
+
+The user's voice is cloned once, in the background, when they upload a
+voice sample (see the API section). After a call, each answer the content
+judge flagged is rewritten and spoken in that voice:
+
+```python
+from ai.voice_cloning import correct_answers, speak_answers
+
+fixes = correct_answers(content_report.needs_work)
+clips = speak_answers(fixes, user.voice_clone_id)  # one WAV per stronger answer
+```
+
+- A rewrite may only use facts from the answer, the question and the
+  playbook. Every number in it, as digits or words, is checked against
+  those; one with a new number is marked unverified and is not spoken.
+- `correct_script` and `speak_script` lightly correct a solo talk with
+  delivery cues (emotion, speed, pauses) and render it as one WAV. A
+  rewrite that drifts from the original wording is spoken as said.
+- `VOICE_CLONE_PROVIDER` is `cartesia` (default) or `resemble`. Cartesia
+  applies emotion and speed only on `sonic-3` and later. Resemble also
+  needs a transcript of the sample and a consent recording URL.
+
 ## Checks
 
 ```bash
@@ -246,6 +275,6 @@ make test-live # real Groq and Gemini calls with the keys in .env (spends quota)
 Integration tests create a throwaway database and bucket, and skip when
 Postgres or MinIO is not running.
 
-Optional dependencies are split by area (`api`, `llm`, `voice`, `vision`, `content`, `diarize`, `whisper-local`) so a
+Optional dependencies are split by area (`api`, `llm`, `voice`, `vision`, `content`, `diarize`, `voice-clone`, `whisper-local`) so a
 change to one part does not pull in heavy libraries from another. `uv sync --all-extras`
 installs all of them.

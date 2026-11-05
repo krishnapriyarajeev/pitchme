@@ -33,6 +33,14 @@ class AnalysisStatus(enum.StrEnum):
     failed = "failed"
 
 
+class VoiceCloneStatus(enum.StrEnum):
+    """Cloning the user's voice from their sample, which runs in the background."""
+
+    pending = "pending"
+    ready = "ready"
+    failed = "failed"
+
+
 def _pg_enum(enum_cls: type[enum.Enum], name: str) -> Enum:
     return Enum(enum_cls, name=name, values_callable=lambda e: [m.value for m in e])
 
@@ -53,6 +61,11 @@ class User(TimestampMixin, Base):
     voice_sample_key: Mapped[str | None]
     voice_transcript: Mapped[str | None]
     voice_clone_id: Mapped[str | None]
+    # None until a sample is uploaded.
+    voice_clone_status: Mapped[VoiceCloneStatus | None] = mapped_column(
+        _pg_enum(VoiceCloneStatus, "voice_clone_status")
+    )
+    voice_clone_error: Mapped[str | None]
     playbook_key: Mapped[str | None]
 
     sessions: Mapped[list[PracticeSession]] = relationship(
