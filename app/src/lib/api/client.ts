@@ -161,3 +161,10 @@ function cleanMessage(message: string): string {
 export function messageOf(error: unknown): string {
   return error instanceof ApiError ? error.message : MESSAGES.server;
 }
+
+export type Health = { status: string; version: string };
+
+/** A quick check that the API answers, for the start screen. */
+export function getHealth(): Promise<Health> {
+  return request<Health>('/health', { auth: false, timeoutMs: 5_000 });
+}

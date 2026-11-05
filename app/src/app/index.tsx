@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { Rise } from '@/components/motion/rise';
+import { ServerStatus } from '@/components/server-status';
 import { AmbientBackdrop } from '@/components/ui/ambient-backdrop';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/ui/logo';
@@ -33,6 +34,7 @@ export default function Start() {
         </Rise>
       </View>
       <Rise index={6} style={styles.footer}>
+        <ServerStatus />
         <Button label="Start" onPress={() => router.replace('/home')} />
       </Rise>
     </Screen>
@@ -43,5 +45,5 @@ const styles = StyleSheet.create({
   centre: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16 },
   title: { textAlign: 'center' },
   tagline: { textAlign: 'center' },
-  footer: { paddingBottom: 12 },
+  footer: { paddingBottom: 12, gap: 12 },
 });

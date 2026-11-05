@@ -1,4 +1,5 @@
-export { ApiError, MESSAGES, messageOf, onSignedOut, request } from '@/lib/api/client';
+export { ApiError, getHealth, MESSAGES, messageOf, onSignedOut, request } from '@/lib/api/client';
+export type { Health } from '@/lib/api/client';
 export { login, logout, register } from '@/lib/api/auth';
 export { getProfile, retryVoiceClone, updateProfile, uploadProfileFile } from '@/lib/api/profile';
 export {
