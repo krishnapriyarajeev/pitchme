@@ -49,6 +49,22 @@ class AISettings(BaseSettings):
     cartesia_language: str = "en"
     resemble_api_key: SecretStr = SecretStr("")
 
+    # ---- Live call (the LiveKit agent worker that plays the buyer) ----
+    livekit_url: str = "ws://localhost:7880"
+    livekit_api_key: str = "devkey"
+    livekit_api_secret: SecretStr = SecretStr("")
+    # Speech to text and text to speech for the buyer. The buyer thinks
+    # with GROQ_MODEL, because a live call needs a fast reply.
+    deepgram_api_key: SecretStr = SecretStr("")
+    deepgram_stt_model: str = "nova-3"
+    deepgram_tts_voice: str = "aura-2-andromeda-en"
+    # A call ends on its own after this long, so a phone left in a pocket
+    # does not keep the buyer talking.
+    rehearsal_max_minutes: int = 20
+    # The worker reports each finished call to the API at this address.
+    server_public_base_url: str = "http://localhost:8000"
+    ai_callback_key: SecretStr = SecretStr("")
+
     # ---- Vision ----
     # Folder with the MediaPipe .task models; empty means ai/models.
     vision_models_dir: str = ""
