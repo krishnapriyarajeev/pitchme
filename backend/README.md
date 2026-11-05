@@ -91,6 +91,7 @@ test or the LiveKit worker can call it directly.
 | `ai/providers` | Groq and Gemini LLMs, Groq Whisper and local faster-whisper, and the factories |
 | `ai/speech` | Fluency (pace, pauses, fillers) and articulation from the transcript |
 | `ai/voice` | Pitch, intonation, loudness, nervousness and syllable rate from the waveform |
+| `ai/vision` | Posture, eye contact, expression and gestures from video, and the annotated video |
 | `ai/utils` | `extract_audio` (ffmpeg to 16 kHz mono WAV), `local_media` (path or storage key to a local file) |
 | `ai/config.py` | Provider settings, read from the same `.env` |
 
@@ -145,6 +146,41 @@ first. Only patterns a listener would notice become findings.
 - The voice pipeline needs the `voice` extra (numpy and Praat through
   parselmouth) and ffmpeg for anything that is not a 16 kHz mono WAV.
 
+### Vision
+
+```bash
+make models   # MediaPipe pose and face models into ai/models (not committed)
+```
+
+```python
+from ai.vision import render_annotated_video, score_vision, voice_timeline
+
+vision = score_vision("call.mp4", mode="qa")  # a path or a storage key
+render_annotated_video(
+    "call.mp4",
+    vision.frames,
+    "annotated.mp4",
+    voice=voice_timeline(voice),  # optional voice panel
+    movement_level=vision.movement.movement_level,
+)
+```
+
+Frames are sampled 2 times a second. Each frame gives shoulder tilt,
+slouch, eye contact, expression and wrist positions.
+
+- **Posture:** shoulder tilt, and slouch from torso height. In a webcam
+  shot the hips are out of view, so slouch then uses head height above
+  the shoulders. Landmark x is scaled by the aspect ratio first, so
+  level shoulders in a 16:9 video read as level.
+- **Eye contact:** both irises centred and the head facing the camera.
+- **Expression:** happy, surprised, tense or neutral, from MediaPipe face
+  blendshapes.
+- **Gestures:** speed of the more active hand, in shoulder widths a
+  second. Gestures are not judged when the hands are in view less than
+  30% of the time.
+- **Annotated video:** skeleton, badges, eye contact light, voice panel
+  and running scores, encoded as H.264 with the original sound.
+
 ## Checks
 
 ```bash
@@ -158,6 +194,6 @@ make test-live # real Groq and Gemini calls with the keys in .env (spends quota)
 Integration tests create a throwaway database and bucket, and skip when
 Postgres or MinIO is not running.
 
-Optional dependencies are split by area (`api`, `llm`, `voice`, `whisper-local`) so a
+Optional dependencies are split by area (`api`, `llm`, `voice`, `vision`, `whisper-local`) so a
 change to one part does not pull in heavy libraries from another. `uv sync --all-extras`
 installs all of them.
