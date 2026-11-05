@@ -77,6 +77,7 @@ function RootStack() {
         }}>
         <Stack.Protected guard={signedIn && onboarding}>
           <Stack.Screen name="onboard/voice" />
+          <Stack.Screen name="onboard/playbook" />
         </Stack.Protected>
         <Stack.Protected guard={signedIn}>
           <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />

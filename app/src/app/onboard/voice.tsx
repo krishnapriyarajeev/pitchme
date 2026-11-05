@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -17,14 +18,15 @@ import { TARGET_SECONDS, voicePassage } from '@/lib/voice';
 
 /** Step 2 of 3: a short voice sample, for answers in the user's own voice. */
 export default function VoiceStep() {
-  const { notice, clearNotice, finishOnboarding } = useAuth();
+  const router = useRouter();
+  const { notice, clearNotice } = useAuth();
   const profile = useRequest('profile', getProfile);
   const upload = useVoiceUpload();
   const [take, setTake] = useState<{ uri: string } | null>(null);
 
   function next() {
     clearNotice();
-    finishOnboarding();
+    router.push('/onboard/playbook');
   }
 
   async function save() {
