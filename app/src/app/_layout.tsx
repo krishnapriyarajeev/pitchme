@@ -84,6 +84,7 @@ function RootStack() {
           <Stack.Screen name="profile/edit" />
           <Stack.Screen name="profile/voice" />
           <Stack.Screen name="sessions" />
+          <Stack.Screen name="prepare" options={{ animation: 'slide_from_bottom' }} />
         </Stack.Protected>
         <Stack.Protected guard={!signedIn}>
           <Stack.Screen name="login" options={{ animation: 'fade' }} />
