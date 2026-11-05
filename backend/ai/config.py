@@ -41,6 +41,14 @@ class AISettings(BaseSettings):
     # Read token for the gated pyannote models on Hugging Face.
     hf_token: SecretStr = SecretStr("")
 
+    # ---- Voice cloning ----
+    voice_clone_provider: str = "cartesia"
+    cartesia_api_key: SecretStr = SecretStr("")
+    # Emotion and speed only take effect on sonic-3 and later.
+    cartesia_model: str = "sonic-3"
+    cartesia_language: str = "en"
+    resemble_api_key: SecretStr = SecretStr("")
+
     # ---- Vision ----
     # Folder with the MediaPipe .task models; empty means ai/models.
     vision_models_dir: str = ""
