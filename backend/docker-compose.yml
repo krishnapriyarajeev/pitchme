@@ -103,6 +103,9 @@ services:
     image: livekit/egress:latest
     cap_add:
       - SYS_ADMIN
+    # Lets an EGRESS_S3_ENDPOINT of host.docker.internal work on Linux too.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       livekit:
         condition: service_started
