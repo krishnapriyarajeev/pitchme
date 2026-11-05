@@ -38,6 +38,7 @@ def test_check_sees_the_whole_package():
 
 # Packages whose imports need only the base install plus the llm extra.
 LIGHT_PACKAGES = [
+    "ai.analysis",
     "ai.content",
     "ai.core",
     "ai.diarize",

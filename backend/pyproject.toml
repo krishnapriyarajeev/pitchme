@@ -28,6 +28,9 @@ api = [
     "python-multipart>=0.0.12",
     # Rooms, recording (egress) and join tokens for the live call.
     "livekit-api>=1.2",
+    # The analysis job queue.
+    "redis>=5.0",
+    "rq>=3.0",
 ]
 # Hosted LLM and transcription clients (Groq, Gemini).
 llm = [
@@ -84,6 +87,7 @@ dev = [
     "pytest-cov>=6.0",
     "pytest-asyncio>=0.24",
     "ruff>=0.8",
+    "fakeredis>=2.20",
 ]
 
 [build-system]

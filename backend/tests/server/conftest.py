@@ -79,11 +79,23 @@ CALLBACK_KEY = "test-callback-key-" + "c" * 32
 
 
 @pytest.fixture
-def api(db_sessionmaker, storage, voice_client, live_calls, monkeypatch) -> TestClient:
+def analysis_queue():
+    """The analysis queue on fakeredis. Jobs wait in it; tests run them."""
+    import fakeredis
+    from rq import Queue
+
+    return Queue("analysis", connection=fakeredis.FakeRedis())
+
+
+@pytest.fixture
+def api(
+    db_sessionmaker, storage, voice_client, live_calls, analysis_queue, monkeypatch
+) -> TestClient:
     from server.config import Settings, get_settings
     from server.db.session import get_db
     from server.deps.livekit import get_live_calls
     from server.deps.voice_clone import get_voice_cloner
+    from server.jobs.queue import get_analysis_queue
     from server.main import create_app
     from server.services.voice_clone import VoiceCloner
     from server.storage import get_storage
@@ -108,11 +120,38 @@ def api(db_sessionmaker, storage, voice_client, live_calls, monkeypatch) -> Test
     app.dependency_overrides[get_db] = _db
     app.dependency_overrides[get_settings] = lambda: settings
     app.dependency_overrides[get_live_calls] = lambda: live_calls
+    app.dependency_overrides[get_analysis_queue] = lambda: analysis_queue
     app.dependency_overrides[get_storage] = lambda: storage
     app.dependency_overrides[get_voice_cloner] = lambda: VoiceCloner(
         db_sessionmaker, storage, client_factory=lambda: voice_client
     )
     return TestClient(app)
+
+
+@pytest.fixture
+def finished_call(signed_in, db_sessionmaker, storage):
+    """A complete call with a transcript and its recording in storage.
+    Returns the session id."""
+    import uuid
+
+    from server.db import PracticeSession, SessionStatus
+
+    session_id = signed_in.post(
+        "/api/sessions", json={"prospect_name": "Jo", "company": "Saber"}
+    ).json()["session_id"]
+    with db_sessionmaker() as db:
+        row = db.get(PracticeSession, uuid.UUID(session_id))
+        row.status = SessionStatus.complete
+        row.end_reason = "seller_left"
+        row.transcript = [
+            {"role": "buyer", "text": "What does it cost?", "start_ms": 0, "end_ms": 900,
+             "interrupted": False},
+            {"role": "seller", "text": "It depends.", "start_ms": 1200, "end_ms": 2000,
+             "interrupted": False},
+        ]  # fmt: skip
+        storage.put_bytes(row.recording_key, b"fake mp4", "video/mp4")
+        db.commit()
+    return session_id
 
 
 @pytest.fixture

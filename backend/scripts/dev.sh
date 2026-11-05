@@ -4,9 +4,10 @@
 #   Docker: Postgres, MinIO, Redis, LiveKit, Egress
 #   API:    uvicorn with reload on $API_PORT (default 8000)
 #   Agent:  LiveKit agent worker (scripts/run_agent.py)
+#   Worker: analysis job worker (scripts/run_worker.py)
 #
 # Usage: make practice   (or ./scripts/dev.sh from backend/)
-# Ctrl-C stops the API and agent. Docker keeps running; `make down` stops it.
+# Ctrl-C stops the API, agent and worker. Docker keeps running; `make down` stops it.
 
 set -euo pipefail
 
@@ -64,7 +65,7 @@ fi
 pids=()
 cleanup() {
   echo
-  echo "==> Stopping API and agent (Docker keeps running; 'make down' stops it)"
+  echo "==> Stopping API, agent and worker (Docker keeps running; 'make down' stops it)"
   for pid in "${pids[@]:-}"; do kill "$pid" 2>/dev/null || true; done
   wait 2>/dev/null || true
 }
@@ -86,6 +87,10 @@ fi
 
 echo "==> API on http://0.0.0.0:${API_PORT}"
 uv run --all-extras uvicorn server.main:app --reload --host 0.0.0.0 --port "$API_PORT" &
+pids+=($!)
+
+echo "==> Analysis worker"
+uv run --all-extras python scripts/run_worker.py &
 pids+=($!)
 
 if [[ -f scripts/run_agent.py ]]; then

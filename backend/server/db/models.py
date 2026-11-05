@@ -108,7 +108,7 @@ class PracticeSession(TimestampMixin, Base):
     duration_seconds: Mapped[float | None] = mapped_column(Numeric(9, 2))
     started_at: Mapped[datetime | None]
     ended_at: Mapped[datetime | None]
-    # seller_left, time_limit, no_show or error.
+    # seller_left, time_limit, no_show, error, or lost when no report came.
     end_reason: Mapped[str | None]
 
     # Analysis job state lives in its own columns so a crash or restart can be

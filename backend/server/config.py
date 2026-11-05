@@ -47,6 +47,13 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expiry_hours: int = 24
 
+    # ---- Redis (analysis job queue) ----
+    # Empty: redis://localhost:REDIS_PORT/0, the Redis from docker-compose.
+    redis_url: SecretStr = SecretStr("")
+    redis_port: int = 6379
+    # A job running longer than this is stopped and marked failed.
+    analysis_timeout_minutes: int = 30
+
     # ---- Agent worker callbacks ----
     ai_callback_key: SecretStr = SecretStr("")
     server_public_base_url: str = "http://localhost:8000"
@@ -62,6 +69,8 @@ class Settings(BaseSettings):
     egress_s3_endpoint: str = ""
     # How long the app has to join with its token.
     livekit_token_ttl_minutes: int = 10
+    # The worker ends a call after this long (same setting as the worker's).
+    rehearsal_max_minutes: int = 20
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -97,6 +106,10 @@ class Settings(BaseSettings):
     def storage_public_endpoint(self) -> str:
         """Host the phone uses for presigned URLs. Falls back to the internal endpoint."""
         return self.s3_public_endpoint or self.s3_endpoint
+
+    @property
+    def redis_dsn(self) -> str:
+        return self.redis_url.get_secret_value() or f"redis://localhost:{self.redis_port}/0"
 
     @property
     def livekit_client_url(self) -> str:

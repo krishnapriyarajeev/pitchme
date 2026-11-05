@@ -25,6 +25,7 @@ and `LIVEKIT_API_SECRET` (32+ characters).
 make up         # Postgres, MinIO, Redis, LiveKit, Egress
 make run        # API on :8000 with reload (API_PORT=8001 make run to change)
 make agent      # the LiveKit worker that plays the AI buyer
+make worker     # the analysis job worker (Redis queue)
 make practice   # everything above, with URLs set for a phone on your LAN
 ```
 
@@ -55,6 +56,8 @@ Interactive docs at `/docs`. Use **Authorize** with your email and password.
 | POST | `/api/sessions` | bearer | Start a call with the AI buyer: room, recording and a join token (201) |
 | GET | `/api/sessions` | bearer | Your sessions, newest first (`limit`, `offset`) |
 | GET | `/api/sessions/{id}` | bearer | One session with its timed transcript and recording link |
+| POST | `/api/sessions/{id}/analyze` | bearer | Queue the analysis of a finished call, `audio` or `audio_video` (202) |
+| GET | `/api/sessions/{id}/analysis` | bearer | Analysis status and stage, and the result once complete |
 | POST | `/internal/sessions/{id}/started` | internal key | The worker reports that the seller joined |
 | POST | `/internal/sessions/{id}/results` | internal key | The worker reports the transcript and how the call ended |
 
@@ -70,10 +73,17 @@ sample replaces the old clone, which is deleted from the provider.
 A session goes `waiting` (room made) to `active` (the seller joined) to
 `complete` or `failed`. `end_reason` says why it ended: `seller_left`,
 `time_limit` (after `REHEARSAL_MAX_MINUTES`), `no_show` (nobody joined
-within two minutes) or `error`. Deal choices accept the app's labels, such
+within two minutes), `error`, or `lost` when the worker never reported
+back. Deal choices accept the app's labels, such
 as "Cold call" or "VP Sales", and are stored as keys (`cold_call`,
 `vp_sales`). The recording link appears once egress has uploaded the file,
 a few seconds after the call ends.
+
+An analysis goes `not_started` to `queued` to `running` (with a `stage`:
+`transcribing`, `analyzing`, `finishing`) to `complete` or `failed` (with
+a plain `error`). Poll the analysis until it is complete. Running it again
+replaces the last result. A job that no worker takes within ten minutes,
+or that outlives `ANALYSIS_TIMEOUT_MINUTES`, is marked failed.
 
 Errors are JSON with a stable `code`, for example
 `{"detail": "An account with this email already exists.", "code": "email_taken"}`.
@@ -94,7 +104,7 @@ make revision m="add some column" # autogenerate a migration from model changes
 | Table | Holds |
 |---|---|
 | `users` | Login, profile, voice sample and playbook keys, voice clone id and status |
-| `practice_sessions` | Deal details and buyer role, call status and end reason, timed transcript, recording key and egress id, analysis job state and result |
+| `practice_sessions` | Deal details and buyer role, call status and end reason, timed transcript, recording key and egress id, analysis status, stage and result |
 
 ## Storage
 
@@ -120,6 +130,7 @@ test or the LiveKit worker can call it directly.
 | `ai/diarize` | Who spoke when, which voice is the user, and cutting a recording to one speaker |
 | `ai/voice_cloning` | Cloning the user's voice and speaking stronger answers in it |
 | `ai/rehearsal` | The live call: buyer personas, the LiveKit agent worker and its reports to the API |
+| `ai/analysis` | One finished call through every pipeline, merged into scores |
 | `ai/utils` | `extract_audio` (ffmpeg to 16 kHz mono WAV), `local_media` (path or storage key to a local file) |
 | `ai/config.py` | Provider settings, read from the same `.env` |
 
@@ -311,6 +322,33 @@ uv run --extra rehearsal python scripts/run_agent.py console   # talk to the buy
 | `AGENT_PORT` | Worker health check port (8081 is Expo's) | `8082` |
 | `AGENT_IDLE_PROCESSES` | Warm job processes | `2` |
 | `EGRESS_S3_ENDPOINT` | Storage for recordings, as egress sees it; empty uses the egress config | empty |
+
+### Analysis
+
+`run_analysis` scores one finished call. The API runs it as a job on the
+worker (`server/jobs/analysis.py`).
+
+1. The recording is transcribed once. The buyer's lines, which the agent
+   worker reported, are found in that transcript; everything else is the
+   seller. No voice model is needed.
+2. Four parts run at the same time: the content judge (against the
+   playbook, when there is one) with stronger answers, speech and voice on
+   the seller's audio alone, and body language on the video.
+3. The stronger answers are spoken in the user's cloned voice, and the
+   annotated video is rendered.
+
+Each dimension is out of 100. Content is the judge's score; speech, voice
+and body language start at 100 and lose 5, 12 or 20 points for each low,
+medium or high finding. The overall score weights content 50%, body
+language 20%, and speech and voice 15% each. A dimension that cannot be
+scored (no video, no questions asked) is skipped with a reason, and the
+others share its weight. Findings from the seller's audio point at the
+moment in the full recording.
+
+| Setting | What it does | Default |
+|---|---|---|
+| `REDIS_URL` | The job queue | `redis://localhost:REDIS_PORT/0` |
+| `ANALYSIS_TIMEOUT_MINUTES` | A longer job is stopped and marked failed | `30` |
 
 ## Checks
 

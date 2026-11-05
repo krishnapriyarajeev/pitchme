@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import Iterable
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -37,6 +39,12 @@ _FINAL_STATUS = {
     "no_show": SessionStatus.failed,
     "error": SessionStatus.failed,
 }
+
+
+# The worker waits this long for the seller to join.
+JOIN_WAIT = timedelta(minutes=2)
+# Slack for the worker's report to arrive after the call ends.
+LOST_MARGIN = timedelta(minutes=5)
 
 
 def room_name(session_id: uuid.UUID) -> str:
@@ -87,14 +95,37 @@ def create(
     )
 
 
-def list_for(db: Session, user: User, *, limit: int, offset: int) -> list[SessionSummary]:
+def expire_lost(db: Session, rows: Iterable[PracticeSession], settings: Settings) -> None:
+    """A call still waiting or active long after the worker would have
+    ended it was lost: the worker died before it could report. It is
+    marked failed with end_reason "lost" instead of waiting forever."""
+    now = datetime.now(UTC)
+    cutoff = now - (JOIN_WAIT + timedelta(minutes=settings.rehearsal_max_minutes) + LOST_MARGIN)
+    lost = [
+        row
+        for row in rows
+        if row.status in (SessionStatus.waiting, SessionStatus.active) and row.created_at < cutoff
+    ]
+    for row in lost:
+        log.warning("Session %s never reported back; marking it lost", row.id)
+        row.status = SessionStatus.failed
+        row.end_reason = "lost"
+        row.ended_at = now
+    if lost:
+        db.commit()
+
+
+def list_for(
+    db: Session, user: User, settings: Settings, *, limit: int, offset: int
+) -> list[SessionSummary]:
     rows = db.scalars(
         select(PracticeSession)
         .where(PracticeSession.user_id == user.id)
         .order_by(PracticeSession.created_at.desc(), PracticeSession.id)
         .offset(offset)
         .limit(limit)
-    )
+    ).all()
+    expire_lost(db, rows, settings)
     return [to_summary(row) for row in rows]
 
 
@@ -174,10 +205,12 @@ def mark_started(db: Session, session_id: uuid.UUID, body: CallStarted) -> None:
 
 def record_results(db: Session, session_id: uuid.UUID, body: CallResults) -> None:
     """Saves the transcript and how the call ended. Reported once: a second
-    report would overwrite a finished call, so it is refused. A seller who
+    report would overwrite a finished call, so it is refused; a report for
+    a call marked lost is still taken, since it is the real outcome. A seller who
     never joined has nothing to play back, so the session gets no recording."""
     row = _get(db, session_id)
-    if row.status in (SessionStatus.complete, SessionStatus.failed):
+    finished = row.status in (SessionStatus.complete, SessionStatus.failed)
+    if finished and row.end_reason != "lost":
         raise Conflict(f"Session is already {row.status}.")
     if body.error:
         log.error("Call %s ended with an error: %s", session_id, body.error)

@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := help
-.PHONY: help dev models up down logs migrate revision run agent practice test test-all test-live lint fmt check clean reset
+.PHONY: help dev models up down logs migrate revision run agent worker practice test test-all test-live lint fmt check clean reset
 
 API_PORT ?= 8000
 
@@ -35,6 +35,9 @@ run:  ## Start the API with reload (API_PORT=8000)
 
 agent:  ## Start the LiveKit agent worker that plays the buyer
 	uv run --extra rehearsal python scripts/run_agent.py start
+
+worker:  ## Start the analysis job worker
+	uv run --extra api --extra llm --extra voice --extra vision --extra content --extra voice-clone python scripts/run_worker.py
 
 practice:  ## Full stack for phone testing: Docker, API and agent
 	API_PORT=$(API_PORT) ./scripts/dev.sh
