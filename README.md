@@ -1,17 +1,19 @@
 # PitchMe
 
-A rehearsal room that talks back.
+Have the meeting before the meeting.
 
-Record yourself pitching, get scored on voice, body language, speech and content,
-face an AI audience that asks the hard questions, and hear a corrected version of
-your talk played back in your own cloned voice.
+PitchMe is a rehearsal room for sales calls. Set up a deal, then talk it
+through on a live call with an AI buyer who acts like that prospect. After
+the call you get a debrief: scores for content, speech, voice and body
+language, answers checked against your own playbook, and stronger answers
+played back in your own cloned voice.
 
 ## Repository layout
 
 | Folder | What it is |
 |---|---|
 | `backend/` | Python backend: FastAPI API (`server/`) and the AI analysis layer (`ai/`) |
-| `app/` | Mobile app built with React Native + Expo |
+| `app/` | Phone app: Expo SDK 57, React Native and expo-router |
 
 Each folder has its own README with setup steps.
 
