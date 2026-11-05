@@ -1,0 +1,51 @@
+from __future__ import annotations
+
+import uuid
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Query, status
+
+from server.config import Settings, get_settings
+from server.deps import CurrentUser, DbSession
+from server.deps.livekit import LiveCallsDep
+from server.deps.storage import StorageDep
+from server.schemas.sessions import (
+    CreateSessionRequest,
+    CreateSessionResponse,
+    SessionDetail,
+    SessionSummary,
+)
+from server.services import sessions as session_service
+
+router = APIRouter(prefix="/api/sessions", tags=["sessions"])
+
+
+@router.post("", response_model=CreateSessionResponse, status_code=status.HTTP_201_CREATED)
+def create_session(
+    body: CreateSessionRequest,
+    user: CurrentUser,
+    db: DbSession,
+    calls: LiveCallsDep,
+    settings: Annotated[Settings, Depends(get_settings)],
+) -> CreateSessionResponse:
+    """Opens a call with the AI buyer. Join the returned room with the token;
+    the buyer joins on its own and speaks first."""
+    return session_service.create(db, user, body, calls, settings)
+
+
+@router.get("", response_model=list[SessionSummary])
+def list_sessions(
+    user: CurrentUser,
+    db: DbSession,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[SessionSummary]:
+    """The caller's sessions, newest first."""
+    return session_service.list_for(db, user, limit=limit, offset=offset)
+
+
+@router.get("/{session_id}", response_model=SessionDetail)
+def get_session(
+    session_id: uuid.UUID, user: CurrentUser, db: DbSession, storage: StorageDep
+) -> SessionDetail:
+    return session_service.to_detail(session_service.get_owned(db, user, session_id), storage)
