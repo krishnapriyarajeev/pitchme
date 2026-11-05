@@ -10,6 +10,8 @@ from ai.rehearsal.deal import AUDIENCES, COMPOSURES, STAGES, normalize
 
 SessionState = Literal["waiting", "active", "complete", "failed"]
 EndReason = Literal["seller_left", "time_limit", "no_show", "error"]
+# "lost": the worker never reported back (set by the API, never sent).
+SessionEndReason = Literal["seller_left", "time_limit", "no_show", "error", "lost"]
 
 
 class CreateSessionRequest(BaseModel):
@@ -85,7 +87,7 @@ class SessionDetail(SessionSummary):
     recording_url: str | None
     started_at: datetime | None
     ended_at: datetime | None
-    end_reason: EndReason | None
+    end_reason: SessionEndReason | None
 
 
 # ---- from the agent worker ----

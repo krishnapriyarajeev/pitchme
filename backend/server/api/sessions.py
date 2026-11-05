@@ -41,18 +41,25 @@ def create_session(
 def list_sessions(
     user: CurrentUser,
     db: DbSession,
+    settings: Annotated[Settings, Depends(get_settings)],
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> list[SessionSummary]:
     """The caller's sessions, newest first."""
-    return session_service.list_for(db, user, limit=limit, offset=offset)
+    return session_service.list_for(db, user, settings, limit=limit, offset=offset)
 
 
 @router.get("/{session_id}", response_model=SessionDetail)
 def get_session(
-    session_id: uuid.UUID, user: CurrentUser, db: DbSession, storage: StorageDep
+    session_id: uuid.UUID,
+    user: CurrentUser,
+    db: DbSession,
+    storage: StorageDep,
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> SessionDetail:
-    return session_service.to_detail(session_service.get_owned(db, user, session_id), storage)
+    row = session_service.get_owned(db, user, session_id)
+    session_service.expire_lost(db, [row], settings)
+    return session_service.to_detail(row, storage)
 
 
 @router.post(

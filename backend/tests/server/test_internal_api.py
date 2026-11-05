@@ -121,3 +121,45 @@ def test_unknown_session(api):
 def test_malformed_results_are_rejected(api, session_id, change):
     url = f"/internal/sessions/{session_id}/results"
     assert api.post(url, json=results(**change), headers=KEY).status_code == 422
+
+
+def _age_call(db_sessionmaker, session_id, minutes):
+    from sqlalchemy import text
+
+    with db_sessionmaker() as db:
+        db.execute(
+            text("UPDATE practice_sessions SET created_at = now() - make_interval(mins => :m) "
+                 "WHERE id = :id"),
+            {"m": minutes, "id": session_id},
+        )  # fmt: skip
+        db.commit()
+
+
+def test_a_call_the_worker_never_reported_is_lost(signed_in, session_id, db_sessionmaker):
+    _age_call(db_sessionmaker, session_id, 26)  # 2 to join + 20 max + 5 margin = 27
+    assert signed_in.get(f"/api/sessions/{session_id}").json()["status"] == "waiting"
+    _age_call(db_sessionmaker, session_id, 28)
+    detail = signed_in.get(f"/api/sessions/{session_id}").json()
+    assert (detail["status"], detail["end_reason"]) == ("failed", "lost")
+    assert detail["ended_at"] is not None
+
+
+def test_listing_also_finds_lost_calls(signed_in, session_id, db_sessionmaker):
+    _age_call(db_sessionmaker, session_id, 60)
+    (summary,) = signed_in.get("/api/sessions").json()
+    assert summary["status"] == "failed"
+
+
+def test_a_late_report_replaces_lost(signed_in, session_id, db_sessionmaker):
+    _age_call(db_sessionmaker, session_id, 60)
+    signed_in.get(f"/api/sessions/{session_id}")
+    url = f"/internal/sessions/{session_id}/results"
+    assert signed_in.post(url, json=results(), headers=KEY).status_code == 204
+    detail = signed_in.get(f"/api/sessions/{session_id}").json()
+    assert (detail["status"], detail["end_reason"]) == ("complete", "seller_left")
+    assert signed_in.post(url, json=results(), headers=KEY).status_code == 409
+
+
+def test_lost_is_not_a_reason_the_worker_can_send(api, session_id):
+    url = f"/internal/sessions/{session_id}/results"
+    assert api.post(url, json=results("lost"), headers=KEY).status_code == 422

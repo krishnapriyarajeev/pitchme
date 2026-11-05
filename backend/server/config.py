@@ -69,6 +69,8 @@ class Settings(BaseSettings):
     egress_s3_endpoint: str = ""
     # How long the app has to join with its token.
     livekit_token_ttl_minutes: int = 10
+    # The worker ends a call after this long (same setting as the worker's).
+    rehearsal_max_minutes: int = 20
 
     @field_validator("cors_origins", mode="before")
     @classmethod
