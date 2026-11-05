@@ -32,6 +32,12 @@ llm = [
     "groq>=0.13",
     "google-genai>=1.0",
 ]
+# Signal analysis for the voice pipeline: pitch, jitter, shimmer and HNR
+# through Praat.
+voice = [
+    "numpy>=1.26",
+    "praat-parselmouth>=0.4.5",
+]
 # Offline transcription with faster-whisper. Large download; only needed
 # when TRANSCRIBE_PROVIDER=local.
 whisper-local = [
