@@ -72,3 +72,28 @@ def test_get_clients_are_cached_from_env(monkeypatch):
     finally:
         for cached in (get_ai_settings, get_llm_client, get_transcribe_client):
             cached.cache_clear()
+
+
+def test_diarize_without_token_names_the_licences():
+    from ai.diarize.base import DiarizeError
+    from ai.providers import make_diarize_client
+
+    with pytest.raises(DiarizeError, match=r"HF_TOKEN is not set.*segmentation-3\.0"):
+        make_diarize_client(_settings(hf_token=""))
+
+
+def test_diarize_without_package(monkeypatch):
+    from ai.diarize.base import DiarizeError
+    from ai.providers import make_diarize_client
+
+    monkeypatch.setitem(sys.modules, "pyannote.audio", None)
+    with pytest.raises(DiarizeError, match=r"uv sync --extra diarize"):
+        make_diarize_client(_settings(hf_token="test-token-not-used"))
+
+
+def test_diarize_unknown_provider():
+    from ai.diarize.base import DiarizeError
+    from ai.providers import make_diarize_client
+
+    with pytest.raises(DiarizeError, match="Unknown DIARIZE_PROVIDER 'nemo'"):
+        make_diarize_client(_settings(diarize_provider="nemo"))
