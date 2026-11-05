@@ -39,7 +39,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 120,
           "backgroundColor": "#F8F5F0",
-          "dark": { "backgroundColor": "#1A141A" }
+          "dark": {
+            "backgroundColor": "#1A141A"
+          }
         }
       ],
       "expo-secure-store",
@@ -48,7 +50,15 @@
         "@config-plugins/react-native-webrtc",
         {
           "cameraPermission": "PitchMe uses your camera during a rehearsal, so your debrief can cover how you come across as well as what you say.",
-          "microphonePermission": "PitchMe uses your microphone so the AI buyer can hear you during a rehearsal."
+          "microphonePermission": "PitchMe uses your microphone so the AI buyer can hear you during a rehearsal, and to record a short voice sample for answers in your own voice."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "PitchMe uses your microphone so the AI buyer can hear you during a rehearsal, and to record a short voice sample for answers in your own voice.",
+          "enableBackgroundRecording": false,
+          "enableBackgroundPlayback": false
         }
       ]
     ],
