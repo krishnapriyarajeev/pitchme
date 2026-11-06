@@ -2,13 +2,17 @@
 .PHONY: help dev models up down logs migrate revision run agent worker practice test test-all test-live lint fmt check clean reset
 
 API_PORT ?= 8000
+# Everything the API and the workers use. Not diarize (pyannote pulls CUDA
+# torch, several GB) or whisper-local; add them with `uv sync --extra ...`
+# when you need them. CI installs the same list.
+EXTRAS := --extra api --extra llm --extra voice --extra vision --extra content --extra voice-clone --extra rehearsal
 
 help:  ## List the targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
 
 dev:  ## Install dependencies and create .env
-	uv sync --all-extras --group dev
+	uv sync $(EXTRAS) --group dev
 	@test -f .env || cp .env.example .env
 
 models:  ## Download the MediaPipe models for the vision pipeline
@@ -31,13 +35,13 @@ revision:  ## New migration from model changes: make revision m="add x"
 	uv run --extra api alembic revision --autogenerate -m "$(m)"
 
 run:  ## Start the API with reload (API_PORT=8000)
-	uv run --all-extras uvicorn server.main:app --reload --host 0.0.0.0 --port $(API_PORT)
+	uv run $(EXTRAS) uvicorn server.main:app --reload --host 0.0.0.0 --port $(API_PORT)
 
 agent:  ## Start the LiveKit agent worker that plays the buyer
 	uv run --extra rehearsal python scripts/run_agent.py start
 
 worker:  ## Start the analysis job worker
-	uv run --extra api --extra llm --extra voice --extra vision --extra content --extra voice-clone python scripts/run_worker.py
+	uv run $(EXTRAS) python scripts/run_worker.py
 
 practice:  ## Full stack for phone testing: Docker, API and agent
 	API_PORT=$(API_PORT) ./scripts/dev.sh

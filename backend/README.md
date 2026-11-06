@@ -365,5 +365,7 @@ Postgres or MinIO is not running. The LiveKit tests also skip when LiveKit
 is not running; the recording test runs with `make test-live`.
 
 Optional dependencies are split by area (`api`, `llm`, `voice`, `vision`, `content`, `diarize`, `voice-clone`, `rehearsal`, `whisper-local`) so a
-change to one part does not pull in heavy libraries from another. `uv sync --all-extras`
-installs all of them.
+change to one part does not pull in heavy libraries from another. `make dev`
+installs every extra the API and the workers use. It leaves out `diarize`
+(pyannote pulls CUDA torch, several GB) and `whisper-local`; add one with
+`uv sync --extra diarize` when you need it.
