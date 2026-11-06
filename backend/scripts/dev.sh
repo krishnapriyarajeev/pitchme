@@ -15,6 +15,9 @@ cd "$(dirname "$0")/.."
 BACKEND_DIR="$(pwd)"
 APP_DIR="$(cd .. && pwd)/app"
 API_PORT="${API_PORT:-8000}"
+# The same runtime extras as the Makefile's EXTRAS: not diarize, which
+# pulls CUDA torch.
+EXTRAS=(--extra api --extra llm --extra voice --extra vision --extra content --extra voice-clone --extra rehearsal)
 
 # Export KEY=VALUE lines from .env without running them as shell.
 if [[ -f .env ]]; then
@@ -82,20 +85,20 @@ done
 
 if [[ -f alembic.ini ]]; then
   echo "==> Applying migrations"
-  uv run --all-extras alembic upgrade head
+  uv run "${EXTRAS[@]}" alembic upgrade head
 fi
 
 echo "==> API on http://0.0.0.0:${API_PORT}"
-uv run --all-extras uvicorn server.main:app --reload --host 0.0.0.0 --port "$API_PORT" &
+uv run "${EXTRAS[@]}" uvicorn server.main:app --reload --host 0.0.0.0 --port "$API_PORT" &
 pids+=($!)
 
 echo "==> Analysis worker"
-uv run --all-extras python scripts/run_worker.py &
+uv run "${EXTRAS[@]}" python scripts/run_worker.py &
 pids+=($!)
 
 if [[ -f scripts/run_agent.py ]]; then
   echo "==> LiveKit agent worker"
-  uv run --all-extras python scripts/run_agent.py start &
+  uv run "${EXTRAS[@]}" python scripts/run_agent.py start &
   pids+=($!)
 fi
 
