@@ -19,4 +19,7 @@ Each folder has its own README with setup steps.
 
 ## Status
 
-Work in progress.
+The backend and the app are complete: sign-up and onboarding, the live call
+with the AI buyer, the review job and the debrief. To run a real call you
+need a development build of the app (see `app/README.md`) and the provider
+keys in `backend/.env` (see `backend/.env.example`).
