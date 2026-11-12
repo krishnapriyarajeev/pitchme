@@ -15,9 +15,8 @@ export type Progress = {
 };
 
 /**
- * Progress from the user's real rehearsals only. The first version filled
- * the screen with sample numbers when there was no data, and made up skill
- * scores by adding fixed offsets to the overall score.
+ * Progress from the user's reviewed rehearsals only. With no review yet,
+ * there is nothing to show, and the screen says how to get one.
  */
 export function progressFrom(sessions: SessionSummary[]): Progress {
   const scored = sessions

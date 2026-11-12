@@ -2,9 +2,7 @@
 
 Content is the judge's own score. Speech, voice and body language start at
 100 and lose points for each finding, by severity, so every score comes
-with the findings that explain it. The first version started voice at an
-arbitrary 85 and speech at the clarity percentage minus penalties, so one
-mumbled word lowered speech twice.
+with the findings that explain it. Each finding costs points once.
 """
 
 from __future__ import annotations
@@ -22,7 +20,7 @@ PENALTY: Mapping[Severity, int] = {
     Severity.HIGH: 20,
 }
 
-# What the buyer heard matters most; then how it looked and sounded.
+# Content counts most, then how the seller looked and sounded.
 WEIGHTS: Mapping[str, float] = {"content": 0.5, "speech": 0.15, "voice": 0.15, "vision": 0.2}
 
 LABELS: Mapping[str, str] = {

@@ -1,10 +1,9 @@
 """The buyer persona: who the buyer is, where the deal stands and how they act.
 
 The prompt is built from three choices on the prepare screen (the buyer's
-role, the deal stage and the buyer's composure) plus the deal details. The
-first version accepted Proposal and Renewal on the prepare screen but had
-no persona for them, so both fell back to a generic buyer; every stage the
-app offers has its own behaviour here.
+role, the deal stage and the buyer's composure) plus the deal details.
+Every stage the app offers has its own behaviour here, so none falls back
+to a generic buyer.
 """
 
 from __future__ import annotations

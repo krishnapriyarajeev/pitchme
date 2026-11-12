@@ -5,8 +5,8 @@ import type { ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
- * The type scale. Headings and numbers are serif on purpose: a serif score
- * reads as a coach's note, a sans one as a grade.
+ * The type scale. Headings and numbers are serif, so a score reads as a
+ * coach's note rather than a grade.
  */
 export type TextVariant =
   | 'display'

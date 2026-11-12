@@ -1,8 +1,8 @@
 """Speak corrected answers or a corrected talk in the user's cloned voice.
 
 The voice is cloned once, when the user uploads their sample, and its id is
-reused here. Cloning again for every playback, as the first version did,
-is slow and costs money on every run.
+reused here. Cloning again for every playback would be slow and cost
+money on every run.
 """
 
 from __future__ import annotations

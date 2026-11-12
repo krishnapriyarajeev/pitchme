@@ -1,8 +1,8 @@
 """The analysis job: one finished call through ai.analysis.
 
-Runs on the RQ worker (`make worker`), never in the API process: the
-first version ran it in a thread inside the API, so a restart lost the
-job and left the session "running" forever. Progress is written to the
+Runs on the RQ worker (`make worker`), never in the API process, so an
+API restart cannot lose the job or leave the session "running" forever.
+Progress is written to the
 session row (analysis_status and analysis_stage), which the app polls.
 """
 
@@ -141,7 +141,7 @@ class AnalysisJob:
 
     def _reference(self, key: str | None, workdir: Path) -> Any:
         """The user's playbook, which the content judge checks answers
-        against. The first version never used it."""
+        against."""
         if not key:
             return None
         from ai.content.reference import ReferenceExtractionError, extract_reference

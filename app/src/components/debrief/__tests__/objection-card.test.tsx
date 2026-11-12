@@ -5,7 +5,7 @@ import type { Objection } from '@/lib/debrief';
 
 jest.mock('expo-audio', () => ({
   useAudioPlayer: () => ({ play: jest.fn(), pause: jest.fn(), seekTo: jest.fn() }),
-  // The player reports seconds; the first version read them as milliseconds.
+  // The player reports seconds, not milliseconds.
   useAudioPlayerStatus: () => ({ playing: false, currentTime: 3, duration: 65 }),
 }));
 

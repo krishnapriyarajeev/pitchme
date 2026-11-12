@@ -22,9 +22,8 @@ import { deliveryFindings, integrityIssues, objections } from '@/lib/debrief';
 import { sessionMeta, sessionTitle } from '@/lib/sessions';
 
 /**
- * The debrief, in sections, from the API's result only. The first version
- * was one 731-line screen and showed sample data when the result did not
- * load; this one says what went wrong and offers to try again.
+ * The debrief, in sections, from the API's result only. When the result
+ * does not load, it says what went wrong and offers to try again.
  */
 export default function Debrief() {
   const router = useRouter();

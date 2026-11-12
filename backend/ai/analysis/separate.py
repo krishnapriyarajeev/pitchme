@@ -1,8 +1,8 @@
 """Which parts of the call recording are the seller.
 
 The recording has both voices on one track, and speech and voice must
-score the seller alone; the first version scored the AI buyer's voice
-too. ai.diarize can split voices, but it needs torch and a voice model. A
+score the seller alone. ai.diarize can split voices, but it needs torch
+and a voice model. A
 rehearsal needs less: the buyer is our own agent, and the worker reports
 every line it spoke. Those lines are found in the recording's transcript
 by aligning words, and whatever is not the buyer is the seller.

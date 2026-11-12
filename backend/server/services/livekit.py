@@ -47,9 +47,8 @@ def recording_request(
 ) -> api.RoomCompositeEgressRequest:
     """Portrait MP4 of the whole room: the seller's camera and both voices.
 
-    The first version passed raw numbers for the codecs and got H.264
-    baseline with Opus audio instead of the H.264 main and AAC its comment
-    promised; named values avoid that.
+    The codecs use named values: raw numbers here give H.264 baseline with
+    Opus audio, not H.264 main with AAC.
     """
     output = api.EncodedFileOutput(file_type=api.EncodedFileType.MP4, filepath=object_key)
     if settings.egress_s3_endpoint:

@@ -70,8 +70,7 @@ export default function Prepare() {
       });
       router.replace(`/call/${room.session_id}`);
     } catch (error) {
-      // The first version dropped this error, and the button just stopped
-      // spinning.
+      // Say why the start failed, under the field when it is about one.
       const result = formError(error, FIELDS);
       setFields(result.fields);
       setMessage(result.message);

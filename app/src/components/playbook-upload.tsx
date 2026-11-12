@@ -25,8 +25,7 @@ type Props = {
 };
 
 /**
- * Picks a playbook and uploads it at once. The first version kept picked
- * files on the phone and never sent them, so the debrief never used them.
+ * Picks a playbook and uploads it at once, so the next debrief can use it.
  */
 export function PlaybookUpload({
   title = 'Upload your playbook',

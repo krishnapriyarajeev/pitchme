@@ -15,9 +15,9 @@ export const JOIN_WINDOW_MS = 110_000;
 const calls = new Map<string, PendingCall>();
 
 /**
- * Keeps the join token in memory between the prepare and call screens. The
- * first version put the token in the route params, where the web build shows
- * it in the address bar and keeps it in history.
+ * Keeps the join token in memory between the prepare and call screens. In
+ * the route params, the web build would show it in the address bar and keep
+ * it in history.
  */
 export function keepCall(room: CallRoom, buyer: Buyer, now = Date.now()): void {
   calls.set(room.session_id, { ...room, buyer, createdAt: now });

@@ -7,8 +7,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { formatClock } from '@/lib/format';
 
 /**
- * The stronger answer in the user's own voice. The first version printed
- * the player's seconds as if they were milliseconds.
+ * The stronger answer in the user's own voice. The player reports its
+ * position in seconds.
  */
 export function AnswerAudio({ uri }: { uri: string }) {
   const theme = useTheme();
