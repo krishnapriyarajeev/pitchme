@@ -2,8 +2,8 @@
  * The `metrics` of an analysis result, from backend/ai (speech, voice and
  * vision reports). Every field is optional: a part that was skipped, or an
  * older result, may leave any of them out, and the charts show what is there.
- * Large per-sample arrays (pitch.hz, loudness.db) are not typed on purpose:
- * the charts use the windows.
+ * Large per-sample arrays (pitch.hz, loudness.db) are left untyped; the
+ * charts use the windows.
  */
 
 export type TimeWindow = { t_start_s: number; t_end_s: number };

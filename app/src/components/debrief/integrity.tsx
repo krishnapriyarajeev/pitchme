@@ -6,8 +6,9 @@ import type { Objection } from '@/lib/debrief';
 import { formatMoment } from '@/lib/format';
 
 /**
- * A wrong price or a claim the playbook does not back: the thing to fix
- * before the real call, so the loudest surface in the app. Terra, not red.
+ * A wrong price or a claim the playbook does not back. These are the
+ * things to fix before the real call, so they get the strongest card in
+ * the app, in terra (the app has no red).
  */
 export function Integrity({ items }: { items: Objection[] }) {
   const look = useCorrectionStyle();

@@ -1,6 +1,6 @@
 """Cut a two-person recording down to one speaker, for speech and voice.
 
-Both pipelines score one person. Simply deleting the other speaker's words
+Both pipelines score one person. Deleting the other speaker's words
 would leave holes in the timeline: fluency would read each of the buyer's
 turns as a long hesitation by the user, and the rate windows would count
 them as silence. So every removed stretch is closed up: later words and

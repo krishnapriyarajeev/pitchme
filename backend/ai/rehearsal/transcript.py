@@ -1,9 +1,8 @@
 """The call transcript, with when each turn was spoken.
 
-The first version kept only role and text, so the analysis could not line
-a turn up with the recording. Each turn now has its start and end in
-milliseconds from the moment the seller joined, which is close to where
-the recording starts.
+Each turn has its start and end in milliseconds from the moment the
+seller joined, which is close to where the recording starts, so the
+analysis can line a turn up with the recording.
 """
 
 from __future__ import annotations

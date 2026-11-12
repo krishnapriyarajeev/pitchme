@@ -15,8 +15,7 @@ import { playbookKind } from '@/lib/playbook';
 
 /**
  * The playbook the debrief reads. The API keeps one per user; a new upload
- * replaces it. The first version showed a list of sample files here that
- * were never sent anywhere.
+ * replaces it.
  */
 export default function PlaybookTab() {
   const profile = useRequest('profile', getProfile);

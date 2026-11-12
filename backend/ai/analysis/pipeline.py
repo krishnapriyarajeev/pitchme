@@ -7,7 +7,7 @@
    annotated video.
 
 A part that fails is skipped with a plain reason and the rest still
-counts; the first version dropped delivery without saying so. Files are
+counts. Files are
 handed to `save_audio` and `save_video`, which return storage keys, so
 this module never touches storage itself.
 """
@@ -352,8 +352,7 @@ def _speak(
     notes: list[str],
 ) -> list[CorrectedAnswer]:
     """Stronger answers, spoken in the user's voice when there is a clone.
-    Without one they stay text: the first version spoke them in a stock
-    voice, which is not the user's."""
+    Without one they stay text; a stock voice is not the user's."""
     answers = [
         CorrectedAnswer(
             question=c.customer_quote,

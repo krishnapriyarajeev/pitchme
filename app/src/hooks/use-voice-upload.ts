@@ -5,8 +5,8 @@ import { voiceFile } from '@/lib/voice';
 
 /**
  * Saves a voice sample. The API then makes the voice clone in the background;
- * Profile shows when it is ready or if it failed. The first version dropped
- * an upload failure without a word, so the user never knew to try again.
+ * Profile shows when it is ready or if it failed. A failed upload shows its
+ * error, so the user knows to try again.
  */
 export function useVoiceUpload() {
   const [saving, setSaving] = useState(false);

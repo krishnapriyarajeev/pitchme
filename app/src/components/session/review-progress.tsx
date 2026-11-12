@@ -9,8 +9,7 @@ import type { AnalysisStatus } from '@/lib/api';
 import { REVIEW_STAGES, stageStates } from '@/lib/review';
 
 /**
- * The review's real stages, as the job reports them. The first version
- * showed timed stages that moved on their own, whatever the job was doing.
+ * The review's stages as the job reports them. Nothing moves on a timer.
  */
 export function ReviewProgress({ status }: { status: Pick<AnalysisStatus, 'status' | 'stage'> }) {
   const theme = useTheme();

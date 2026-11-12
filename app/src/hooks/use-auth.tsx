@@ -79,8 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void restoreSession().then((result) => {
       if (alive) setStatus(result);
     });
-    // The first version had no such hook, so an expired session stayed stuck
-    // on screens that could no longer load anything.
+    // Without this, an expired session stays stuck on screens that can no
+    // longer load anything.
     const stop = onSignedOut(() => {
       setOnboarding(false);
       setNotice(MESSAGES.expired);

@@ -3,8 +3,8 @@
 Input is `ContentReport.needs_work`: each finding already holds the buyer's
 question, the user's answer, why it was flagged and any playbook evidence.
 A rewrite is expected to differ a lot from a dodged answer, so there is no
-wording-similarity check. The check that matters is facts: every number in
-the rewrite must appear in the answer, the question or the evidence. A
+wording-similarity check. Facts are checked instead: every number in the
+rewrite must appear in the answer, the question or the evidence. A
 rewrite that brings in a new number is kept but marked unverified, and is
 not played back by default.
 """

@@ -17,9 +17,8 @@ type Props = {
 };
 
 /**
- * The voice sample and its clone, as the API reports them. The first version
- * called a voice "ready" as soon as any sample existed, even when the clone
- * had failed, and stronger answers then played in a stock voice.
+ * The voice sample and its clone, as the API reports them. A sample alone
+ * is not "ready": only a finished clone is.
  */
 export function VoiceStatus({ profile, reload }: Props) {
   const theme = useTheme();

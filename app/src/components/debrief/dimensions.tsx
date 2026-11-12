@@ -10,8 +10,8 @@ import type { Dimension } from '@/lib/api';
 
 /**
  * Content, speech, voice and body language. A part that could not be scored
- * says why, in place of a bar. The first version used other band edges here
- * than on the rest of the app.
+ * says why, in place of a bar. Bands use the same edges as everywhere else
+ * (bandFor).
  */
 export function Dimensions({ dimensions }: { dimensions: Dimension[] }) {
   const theme = useTheme();

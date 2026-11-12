@@ -102,7 +102,7 @@ export default function HomeTab() {
         <EmptyState
           icon="video"
           title="Nothing here yet"
-          body="The first one always feels stiff. That is why it belongs here, not on the real call."
+          body="The first one always feels stiff. Better here than on the real call."
         />
       ) : (
         <View style={styles.list}>

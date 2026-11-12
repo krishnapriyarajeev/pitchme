@@ -14,8 +14,8 @@ type Props = {
 };
 
 /**
- * How deep to review. The first version put credit prices on these cards;
- * there are no credits, and practising must never feel like it costs.
+ * How deep to review. No price on either card: practising must never feel
+ * like it costs.
  */
 export function ReviewChoice({ sessionId, onStarted }: Props) {
   const theme = useTheme();
