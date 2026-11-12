@@ -8,14 +8,24 @@ app/
   src/
     app/              routes: the file name is the route
       (tabs)/         Home, Playbook and Profile, with our own tab bar
+      onboard/        sign-up, voice sample and playbook steps
+      call/           the live call
+      session/        one rehearsal: review choice, stages, recording
+      debrief/        the debrief
     components/
       ui/             the UI kit: Screen, Text, Button, fields, cards, logo
       motion/         Rise (entrance), Pulse and Spinner (ambient), GrowBar (data)
+      charts/         line chart and stat tile
+      call/           the call room (native) and its web stand-in
+      session/        review choice, review stages, video, transcript
+      debrief/        one file per debrief section
     constants/        theme, fonts, score bands, motion, deal choices
-    hooks/            theme, reduced motion, useRequest, back navigation
+    hooks/            sign-in state, useRequest, the session list, theme
     lib/
-      api/            typed API client
+      api/            typed API client and analysis metrics
       storage.ts      the sign-in, in the Keychain or Keystore
+      sessions.ts     one state for each rehearsal
+      debrief.ts      what the debrief shows, from the result
   scripts/            use-lan-ip.sh, make_icons.py
 ```
 
@@ -75,9 +85,9 @@ The web build (`npm run web`) shows the screens, but it has no live call.
 | `/profile/edit`, `/profile/voice` | signed in         | Edit details, record a new voice sample |
 
 `AuthProvider` (`src/hooks/use-auth.tsx`) holds the sign-in state, and the
-root layout shows screens by it with `Stack.Protected`. Screens do not
-navigate after sign-in or sign-out: the state changes, and the layout moves
-the user to the first screen they may see.
+root layout shows screens by it with `Stack.Protected`. After sign-in or
+sign-out, no screen navigates on its own. The state changes, and the layout
+moves the user to the first screen they may see.
 
 - **Auto login:** a saved token is checked once at launch, behind the splash
   screen. Only a rejected token signs the user out. With no network, the
@@ -120,8 +130,8 @@ two in step.
 
 ## Design
 
-- Plum and Sage, in light and dark. There is no red: the lowest score band is
-  "Needs work", and every band pill shows its label.
+- Plum and Sage, in light and dark. The app uses no red. The lowest score
+  band is "Needs work", and every band pill shows its label.
 - Newsreader for headings and numbers, IBM Plex Sans for text.
 - Three kinds of motion: entrance, ambient (only for live things) and data.
   All of them respect the system's reduce motion setting.

@@ -37,13 +37,13 @@ playbook and plays stronger ones back in your own voice.
 
 ## Why
 
-Most sales calls go wrong in ways you could have caught: a price quoted from
-memory, an objection you had no answer for, a pitch that ran too fast. PitchMe
-lets you have that call first, with a buyer who acts like the real one, and
-tells you what to fix while there is still time.
+On the real call, it is too late to fix a price quoted from memory, an
+objection with no answer ready or a pitch that runs too fast. PitchMe lets
+you have the call first, with a buyer who acts like the real one, and shows
+you what to fix while there is still time.
 
-The app coaches; it does not grade. There is no red anywhere. The lowest score
-band is "Needs work", and every weak spot comes with the next thing to try.
+The app coaches. It uses no red, the lowest score band is "Needs work", and
+every weak spot comes with the next thing to try.
 
 ## What it does
 
@@ -125,9 +125,9 @@ sequenceDiagram
 
 ### Scoring
 
-Each dimension starts at 100 and loses points for each finding: 5 for a low
-one, 12 for a medium one and 20 for a high one. The overall score weights
-them:
+Content is the score the content judge gives. Speech, voice and body language
+start at 100 and lose 5, 12 or 20 points for each low, medium or high finding.
+The overall score weights the four:
 
 | Dimension | Weight | What it looks at |
 |---|---|---|
@@ -137,9 +137,9 @@ them:
 | Voice | 15% | Pitch range, monotone stretches, volume, jitter and shimmer, from Praat |
 
 A dimension that cannot be scored (no questions asked, or an audio-only
-review with no video) says why, and the others share its weight. The buyer's
-own voice is never scored: the worker finds the buyer's lines in the
-recording and judges only yours.
+review with no video) says why, and the others share its weight. The worker
+finds the buyer's lines in the recording and scores only yours, so the
+buyer's voice never counts against you.
 
 ## Quick start
 
